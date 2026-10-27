@@ -17,9 +17,9 @@ Updated: 2026-10-27 (Asia/Karachi).
 | --- | --- |
 | Planned | Optional Gemini, validated/grounded output, save-first processing, safe retries, migration, verification. |
 | Implemented | Official google-genai adapter, async processor interface, configuration diagnostics, bounded calls, approved-only JSON FAQ loader, source snapshots, sanitized states, atomic claims, attempt history, candidates/revision checks, backed-up migration, review UI, tests and smoke commands. |
-| Tested | 83 pytest tests passed (including the original Phase 1 coverage), Ruff lint/format passed, pip check passed. Chrome demo + mocked Gemini failure/retry/candidate workflow passed; screenshots inspected. No real model called. |
-| Committed | Pending final verification/diff review. |
-| Pushed | Not yet pushed for Phase 2. |
+| Tested | 83 pytest tests passed (including the original Phase 1 coverage), Ruff lint/format passed, pip check passed. Chrome demo + mocked Gemini failure/retry/candidate workflow passed; screenshots inspected. GitHub Actions passed on the implementation commit. No real model called. |
+| Committed | `0d0249d` — `Add Phase 2 Gemini enquiry processing`. Delivery evidence recorded in a subsequent documentation commit. |
+| Pushed | Implementation SHA verified on the expected remote's `main`; tracking `origin/main`. |
 | Deployed | Not deployed; local only. SchoolOS, Vercel, and Neon unchanged. |
 
 Explicit demo mode remains. Gemini mode never silently falls back to demo.
@@ -46,6 +46,14 @@ receipts, exact message whitespace, manual draft, Reviewed status, demo history,
 administrator hash/session, backup integrity, and repeatability. No normal local
 database was deleted, recreated, or upgraded as part of automated verification.
 The existing `.env` was not overwritten. Unrelated `.vscode/` work is preserved.
+
+Remote Phase 2 CI: [Checks run 40563864676](https://github.com/SalmanAliAqdas/rumi-enquiry-assistant/actions/runs/40563864676)
+completed successfully on `0d0249d` (Ubuntu, Python 3.13).
+
+Read-only local schema inspection confirmed an existing Phase 1 database. Its
+upgrade remains an explicit owner action: stop the app and run
+`python -m app.cli migrate-db` to create the backup and apply the migration.
+No normal local records or administrator credentials were changed by verification.
 
 ## Remaining roadmap
 
