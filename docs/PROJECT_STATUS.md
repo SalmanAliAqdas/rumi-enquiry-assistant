@@ -6,9 +6,9 @@ Updated: 2026-10-27 (Asia/Karachi).
 | --- | --- |
 | Planned | Local form, persistent records, deterministic demo processor, private workflow, security safeguards, tests, documentation, CI. |
 | Implemented | Application, CLI, templates/assets, isolated tests, optional browser smoke, example FAQ, documentation, GitHub Actions. |
-| Tested | 27 pytest tests passed; Ruff lint and format checks passed; pip dependency check passed. Chrome smoke workflow passed; desktop/mobile screenshots visually inspected. |
-| Committed | Pending final diff review and commit. |
-| Pushed | Not yet pushed. Expected remote configured; repository has no branches. |
+| Tested | 27 pytest tests passed; Ruff lint and format checks passed; pip dependency check passed. Chrome smoke passed; desktop/mobile screenshots inspected. GitHub Actions also passed on the implementation commit. |
+| Committed | Implementation committed as `279420a` with message `Build Phase 1 FastAPI enquiry workflow`. Delivery evidence recorded in a subsequent documentation commit. |
+| Pushed | Implementation commit `279420a` successfully pushed to the expected repository's `main` branch; tracking `origin/main`. |
 | Deployed | Not deployed. Localhost only; Vercel and Neon unchanged. |
 
 ## Scope
@@ -42,3 +42,13 @@ See README for the exact local setup and verification commands.
   `artifacts/`; no passwords or real customer records captured. Form, dashboard,
   and detail rendering inspected; form/detail mobile viewport overflow checks passed.
 - No deployment attempted. No changes to SchoolOS, Vercel, or Neon.
+- Remote CI: [Checks run 40558489583](https://github.com/SalmanAliAqdas/rumi-enquiry-assistant/actions/runs/40558489583)
+  completed successfully on implementation commit `279420a` (Ubuntu, Python 3.13).
+
+## Local handoff
+
+No administrator was created in the normal application database; choose local
+credentials with `python -m app.cli create-admin`. Browser verification used
+discarded random test credentials and temporary databases. No app server is left
+running by the completed smoke check. No implementation issue remains from the
+checks performed; the local-prototype limitations in README still apply.
