@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-27 (Asia/Karachi).
+Updated: 2026-10-28 (Asia/Karachi).
 
 | State | Phase 1 delivery (historical) |
 | --- | --- |
@@ -17,8 +17,8 @@ Updated: 2026-10-27 (Asia/Karachi).
 | --- | --- |
 | Planned | Optional Gemini, validated/grounded output, save-first processing, safe retries, migration, verification. |
 | Implemented | Official google-genai adapter, async processor interface, configuration diagnostics, bounded calls, approved-only JSON FAQ loader, source snapshots, sanitized states, atomic claims, attempt history, candidates/revision checks, backed-up migration, review UI, tests and smoke commands. |
-| Tested | 83 pytest tests passed (including the original Phase 1 coverage), Ruff lint/format passed, pip check passed. Chrome demo + mocked Gemini failure/retry/candidate workflow passed; screenshots inspected. GitHub Actions passed on the implementation commit. No real model called. |
-| Committed | `0d0249d` — `Add Phase 2 Gemini enquiry processing`. Delivery evidence recorded in a subsequent documentation commit. |
+| Tested | 83 pytest tests passed, Ruff lint/format and pip check passed. Prior Chrome mocked workflow passed. Real Gemini smoke now passed for English, Urdu, and Roman Urdu after correcting the provider JSON Schema field. |
+| Committed | Baseline implementation: `0d0249d`. Schema correction, regression coverage, and live-verification notes are included in the follow-up commit titled `Fix Gemini schema configuration and record live verification`; see Git history for its SHA. |
 | Pushed | Implementation SHA verified on the expected remote's `main`; tracking `origin/main`. |
 | Deployed | Not deployed; local only. SchoolOS, Vercel, and Neon unchanged. |
 
@@ -33,13 +33,20 @@ on 2026-10-27. Account-specific quota/billing enrollment remains unverified.
 The older 2.5 family is restricted to prior users; the selected 3.5 model is
 documented for new projects. Minimal thinking is configured for the default model.
 
-**Real Gemini verification: NOT RUN.** The explicit smoke command reported that
-Gemini mode and a server-side key were not configured. Mocked tests and browser
-verification are not evidence of live model access, language quality, or free quota.
+**Real Gemini verification: PASSED on 2026-10-28.** With owner-configured Gemini
+settings, the explicit smoke command returned valid structured results for all
+three fictional English/Urdu/Roman Urdu messages. The initial live call exposed
+a provider schema-format error; the adapter now uses `response_json_schema`
+instead of the legacy `response_schema` field, with regression coverage of the
+serialized wire field. No key, raw provider response, or generated content was
+printed. No smoke enquiries were saved or replies sent. This verifies live access
+for these requests, not unlimited quota or general language/factual quality.
 
 No owner FAQ was approved. The 13 JSON examples remain false, as does the status
 of the existing fictional Markdown FAQ. Approved fixtures are fictional/test-only.
 Private owner knowledge belongs in ignored `private/faq.json`.
+That file was missing and was created from the example with all 13 entries still
+unapproved. Existing `.env` settings and the configured model were preserved.
 
 Migration verification uses temporary populated Phase 1 databases and checks
 receipts, exact message whitespace, manual draft, Reviewed status, demo history,
@@ -50,15 +57,15 @@ The existing `.env` was not overwritten. Unrelated `.vscode/` work is preserved.
 Remote Phase 2 CI: [Checks run 40563864676](https://github.com/SalmanAliAqdas/rumi-enquiry-assistant/actions/runs/40563864676)
 completed successfully on `0d0249d` (Ubuntu, Python 3.13).
 
-Read-only local schema inspection confirmed an existing Phase 1 database. Its
-upgrade remains an explicit owner action: stop the app and run
-`python -m app.cli migrate-db` to create the backup and apply the migration.
-No normal local records or administrator credentials were changed by verification.
+To fulfill the subsequent request to start the app, the existing Phase 1 database
+was backed up with the integrity-checked SQLite backup API and migrated to version 2.
+The backup is under ignored `backups/`; original records and administrator credentials
+are preserved. This was a runtime upgrade, separate from isolated automated tests.
 
 ## Remaining roadmap
 
-- Phase 2 implementation is complete; real-model verification awaits explicit
-  Gemini configuration and available free quota.
+- Real Gemini smoke verification has passed. Owner approval of actual FAQ facts
+  and broader model-quality evaluation remain outstanding.
 - Phase 3 (planned): further polish, security/reliability checks, CI refinement,
   publishing/documentation completion, optional deployment preparation.
 
@@ -84,9 +91,8 @@ See README for the exact local setup and verification commands.
 
 ## Local handoff
 
-No administrator was created in the normal application database. Existing
-installations must preserve their administrator and run `python -m app.cli migrate-db`.
-New installations use `python -m app.cli create-admin`. Browser verification used
-discarded random test credentials and temporary databases. No app server is left
-running by the completed smoke check. No implementation issue remains from the
-checks performed; the local-prototype limitations in README still apply.
+The existing administrator was preserved. The local app was started on
+`http://127.0.0.1:8000/` at the owner's request after live verification and migration.
+New installations use `python -m app.cli create-admin`. Browser smoke verification
+uses discarded random credentials and temporary databases. The local-prototype
+limitations in README still apply; no deployment or billing change was made.

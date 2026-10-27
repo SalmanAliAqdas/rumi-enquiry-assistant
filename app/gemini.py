@@ -78,7 +78,7 @@ class GeminiProcessor:
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
                         response_mime_type="application/json",
-                        response_schema=ProcessingResult,
+                        response_json_schema=ProcessingResult.model_json_schema(),
                         temperature=0,
                         max_output_tokens=self.max_tokens,
                         automatic_continuation=False,

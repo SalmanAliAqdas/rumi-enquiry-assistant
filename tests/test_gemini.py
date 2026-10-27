@@ -279,5 +279,7 @@ def test_official_sdk_serializes_schema_through_mock_transport(monkeypatch):
     assert result.category == "Website"
     assert len(requests) == 1
     assert requests[0]["generationConfig"]["responseMimeType"] == "application/json"
-    assert "responseSchema" in requests[0]["generationConfig"]
+    config = requests[0]["generationConfig"]
+    assert "responseSchema" not in config
+    assert config["responseJsonSchema"]["additionalProperties"] is False
     assert FAKE_KEY not in json.dumps(requests)
