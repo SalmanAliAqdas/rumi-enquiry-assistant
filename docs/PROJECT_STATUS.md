@@ -12,12 +12,15 @@ not missing application features. No hosting environment was selected or verifie
 | --- | --- |
 | Planned | Finish local usability, private configuration/knowledge status, concrete reliability/security review, regression/browser/clean-install checks, owner documentation, commit/push and CI verification. |
 | Implemented | Clear customer-needs/next-step views, separate processing/workflow labels, candidate notices, private setup panel/API, zero-knowledge guidance, saved/unsaved states, duplicate-action guards, revision-checked browser draft saves, local login/model budgets, SQL parameter redaction, pagination bounds, keyboard/mobile improvements, owner guide. |
-| Tested | 93 isolated pytest tests passed; Ruff lint/format and pip check passed. Extended Chrome workflow and desktop/mobile inspection passed. Clean pinned installation passed in demo mode without a key, with temporary records and credentials. |
-| Committed | Pending final diff review; requested message: `Complete Phase 3 usability and reliability review`. |
-| Pushed | Pending Phase 3 publication and remote SHA/Actions verification. |
+| Tested | 93 isolated pytest tests passed; Ruff lint/format and pip check passed. Extended Chrome workflow and desktop/mobile inspection passed. Clean pinned installation passed in demo mode without a key. GitHub Actions passed on the completion commit. |
+| Committed | `69e869f` — `Complete Phase 3 usability and reliability review`. Final delivery evidence is recorded in a subsequent documentation commit. |
+| Pushed | Completion commit `69e869f` pushed to the expected repository's `main`; remote SHA verified. |
 | Deployed | Not deployed. Localhost only; no SchoolOS, Vercel, Neon, or billing changes. No deployment-readiness claim. |
 
 ### Phase 3 verification scope
+
+Remote CI: [Checks run 40570636020](https://github.com/SalmanAliAqdas/rumi-enquiry-assistant/actions/runs/40570636020)
+completed successfully on completion commit `69e869f` (Ubuntu, Python 3.13).
 
 - Normal automated tests and browser checks use temporary databases, fictional
   records, and mocked providers. No real Gemini requests were repeated: its request
