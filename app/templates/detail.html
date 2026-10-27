@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Review enquiry · Rumi Enquiry Assistant{% endblock %}
+{% block content %}
+<a href="/admin" class="text-link">← Back to inbox</a>
+<div class="page-heading"><div><p class="eyebrow">Enquiry review</p><h1>{{ enquiry.name }}</h1><p class="reference small">{{ enquiry.reference }}</p></div>{% include "logout.html" %}</div>
+<p class="demo-banner">{{ demo_label }} Processing: {{ enquiry.processing_status }} · Mode: {{ enquiry.processing_mode }}</p>
+<div class="detail-layout">
+  <section class="card"><h2>Original enquiry</h2><dl><dt>Email</dt><dd>{{ enquiry.email }}</dd><dt>Category</dt><dd>{{ enquiry.category.value }}</dd><dt>Received (UTC)</dt><dd>{{ enquiry.created_at.strftime('%d %b %Y · %H:%M') }}</dd><dt>Last updated (UTC)</dt><dd id="updated-at">{{ enquiry.updated_at.strftime('%d %b %Y · %H:%M') }}</dd></dl><h3>Customer message</h3><div class="original-message">{{ enquiry.message }}</div><h3>Demo summary</h3><p class="original-message">{{ enquiry.summary }}</p></section>
+  <section class="card"><p class="eyebrow">Manual review required</p><h2>Prepare a reply</h2><p class="muted">Edit and copy the draft for review. This app never sends replies.</p>
+    <form id="draft-form" data-enquiry-id="{{ enquiry.id }}"><label for="reply_draft">Reply draft</label><textarea id="reply_draft" name="reply_draft" rows="13" required maxlength="6000">{{ enquiry.reply_draft }}</textarea><label for="workflow_status">Workflow status</label><select id="workflow_status" name="workflow_status">{% for status in statuses %}<option value="{{ status.value }}" {% if enquiry.workflow_status == status %}selected{% endif %}>{{ status.value }}</option>{% endfor %}</select><div class="actions"><button type="submit" class="button primary">Save changes</button><button type="button" id="copy-draft" class="button secondary">Copy draft</button></div><p id="draft-feedback" class="feedback" role="status" aria-live="polite"></p></form>
+  </section>
+</div>
+{% endblock %}

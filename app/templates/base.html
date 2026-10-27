@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token|default('') }}">
+  <title>{% block title %}Rumi Enquiry Assistant{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+  <script src="{{ url_for('static', path='app.js') }}" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="brand"><span class="brand-mark" aria-hidden="true">R</span><span>Rumi <strong>Enquiry Assistant</strong></span></a>
+    <nav aria-label="Main navigation"><a href="/">Submit an enquiry</a><a href="/admin">Private dashboard</a></nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer><span>Rumi Enquiry Assistant · Local learning prototype</span><span>{{ demo_label }}</span></footer>
+</body>
+</html>

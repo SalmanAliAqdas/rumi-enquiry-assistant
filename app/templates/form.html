@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="public-layout">
+  <section class="intro">
+    <p class="eyebrow">A clear first step</p>
+    <h1>Good projects start<br>with a conversation.</h1>
+    <p class="lead">Tell us what you’re working on. Share your idea, the challenge, or the process you’d like to improve.</p>
+    <div class="services"><span>Websites</span><span>Mobile applications</span><span>Automation</span></div>
+    <div class="note"><span class="note-icon" aria-hidden="true">↗</span><div><strong>From idea to enquiry</strong><p>Your message is saved locally and a demo draft is prepared for private, manual review. No reply is sent automatically.</p></div></div>
+    <p class="demo-label">{{ demo_label }}</p>
+    <p class="muted">Learning prototype. Use fictional details only; please don’t include sensitive information.</p>
+  </section>
+  <section class="card form-card" aria-labelledby="form-title">
+    <p class="eyebrow">Let’s hear your idea</p><h2 id="form-title">Send an enquiry</h2><p class="muted">All fields are required.</p>
+    <form id="enquiry-form">
+      <label for="name">Your name</label><input id="name" name="name" autocomplete="name" required maxlength="100" placeholder="e.g. Alex Example">
+      <label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="alex@example.com">
+      <label for="message">What would you like to build?</label><textarea id="message" name="message" required minlength="20" maxlength="3000" rows="7" aria-describedby="message-help" placeholder="Describe your idea, goals, and the help you need…"></textarea>
+      <div class="field-help"><span id="message-help">20–3000 characters. Outer whitespace is trimmed.</span><span id="character-count">0 / 3000</span></div>
+      <button class="button primary wide" type="submit">Submit enquiry <span aria-hidden="true">↗</span></button>
+      <p id="form-feedback" class="feedback" role="status" aria-live="polite"></p>
+      <noscript><p>This form requires JavaScript. You can also submit through the API documentation at /docs.</p></noscript>
+    </form>
+    <div id="receipt" hidden tabindex="-1"><span class="success-symbol" aria-hidden="true">✓</span><h2>Your enquiry is saved.</h2><p>Keep your reference for your records:</p><p id="receipt-reference" class="reference"></p><p class="muted">This prototype does not send emails. A person reviews all drafts privately.</p><a class="button secondary" href="/">Start a new enquiry</a></div>
+  </section>
+</div>
+{% endblock %}
