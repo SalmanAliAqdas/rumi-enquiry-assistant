@@ -13,7 +13,12 @@ def make_engine(url: str):
 
 
 def init_db(engine):
+    from app.migrations import require_current_schema
+
+    require_current_schema(engine)
     SQLModel.metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.exec_driver_sql("PRAGMA user_version=2")
 
 
 def get_db(request: Request):

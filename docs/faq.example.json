@@ -1,0 +1,15 @@
+[
+  {"id":"example-services","question":"Which services are offered?","answer":"FICTIONAL EXAMPLE ONLY: replace this with the owner's verified service list.","approved":false},
+  {"id":"example-websites","question":"What website work is available?","answer":"FICTIONAL EXAMPLE ONLY: describe verified website services and scope.","approved":false},
+  {"id":"example-mobile","question":"Which mobile platforms are supported?","answer":"FICTIONAL EXAMPLE ONLY: enter only platforms confirmed by the owner.","approved":false},
+  {"id":"example-automation","question":"What can be automated?","answer":"FICTIONAL EXAMPLE ONLY: describe verified automation capabilities.","approved":false},
+  {"id":"example-price","question":"How is pricing determined?","answer":"FICTIONAL EXAMPLE ONLY: enter the owner's approved pricing explanation without invented figures.","approved":false},
+  {"id":"example-delivery","question":"What is the delivery timeline?","answer":"FICTIONAL EXAMPLE ONLY: enter an approved explanation; do not invent dates.","approved":false},
+  {"id":"example-requirements","question":"What details are needed for an enquiry?","answer":"FICTIONAL EXAMPLE ONLY: replace with the owner's reviewed requirements checklist.","approved":false},
+  {"id":"example-maintenance","question":"Is maintenance available?","answer":"FICTIONAL EXAMPLE ONLY: enter verified maintenance arrangements if applicable.","approved":false},
+  {"id":"example-integrations","question":"Which integrations are supported?","answer":"FICTIONAL EXAMPLE ONLY: list only integrations the owner has confirmed.","approved":false},
+  {"id":"example-ownership","question":"Who owns the deliverables?","answer":"FICTIONAL EXAMPLE ONLY: obtain an approved answer; do not invent contract terms.","approved":false},
+  {"id":"example-security","question":"What security practices apply?","answer":"FICTIONAL EXAMPLE ONLY: record verified practices without unsupported guarantees.","approved":false},
+  {"id":"example-portfolio","question":"Can you share past projects?","answer":"FICTIONAL EXAMPLE ONLY: include only owner-approved public examples; no invented clients.","approved":false},
+  {"id":"example-contact","question":"How should a customer follow up?","answer":"FICTIONAL EXAMPLE ONLY: enter verified contact instructions without inventing contact details.","approved":false}
+]

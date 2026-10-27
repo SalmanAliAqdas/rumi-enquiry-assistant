@@ -63,7 +63,9 @@ if (filters) filters.addEventListener("submit", () => {
 });
 
 const draftForm = document.querySelector("#draft-form");
+let draftDirty = false;
 if (draftForm) {
+  draftForm.addEventListener("input", () => { draftDirty = true; });
   const draft = document.querySelector("#reply_draft");
   const feedback = document.querySelector("#draft-feedback");
   draftForm.addEventListener("submit", async event => {
@@ -75,6 +77,9 @@ if (draftForm) {
       const data = await sendJSON(`/api/admin/enquiries/${draftForm.dataset.enquiryId}`, "PATCH", Object.fromEntries(new FormData(draftForm)));
       document.querySelector("#updated-at").textContent = data.updated_at;
       feedback.textContent = "Changes saved. Reply remains a draft.";
+      draftDirty = false;
+      const apply = document.querySelector("#apply-candidate");
+      if (apply) apply.dataset.revision = data.draft_revision;
       feedback.classList.remove("error");
     } catch (error) {
       feedback.textContent = error.message;
@@ -89,6 +94,33 @@ if (draftForm) {
       draft.focus();
       draft.select();
       feedback.textContent = "Select and copy the draft using Ctrl+C (or Command+C).";
+    }
+  });
+}
+
+for (const [id, action, feedbackId] of [
+  ["retry-processing", "retry", "processing-feedback"],
+  ["apply-candidate", "apply-candidate", "candidate-feedback"],
+]) {
+  const button = document.getElementById(id);
+  if (!button) continue;
+  button.addEventListener("click", async () => {
+    const feedback = document.getElementById(feedbackId);
+    if (draftDirty) {
+      feedback.textContent = "Save your draft changes before processing or applying a candidate.";
+      return;
+    }
+    button.disabled = true;
+    feedback.textContent = "Processing… Your saved draft will be preserved until you apply a candidate.";
+    try {
+      const body = action === "retry" ? {} : {
+        candidate_id: button.dataset.candidateId, draft_revision: Number(button.dataset.revision),
+      };
+      await sendJSON(`/api/admin/enquiries/${button.dataset.enquiryId}/${action}`, "POST", body);
+      window.location.reload();
+    } catch (error) {
+      feedback.textContent = error.message;
+      button.disabled = false;
     }
   });
 }

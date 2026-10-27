@@ -2,7 +2,7 @@
 
 Updated: 2026-10-27 (Asia/Karachi).
 
-| State | Phase 1 status |
+| State | Phase 1 delivery (historical) |
 | --- | --- |
 | Planned | Local form, persistent records, deterministic demo processor, private workflow, security safeguards, tests, documentation, CI. |
 | Implemented | Application, CLI, templates/assets, isolated tests, optional browser smoke, example FAQ, documentation, GitHub Actions. |
@@ -11,17 +11,46 @@ Updated: 2026-10-27 (Asia/Karachi).
 | Pushed | Implementation commit `279420a` successfully pushed to the expected repository's `main` branch; tracking `origin/main`. |
 | Deployed | Not deployed. Localhost only; Vercel and Neon unchanged. |
 
-## Scope
+## Phase 2 status
 
-Phase 1 only. No model connected, no API key, no outgoing replies. Fictional data
-only. No actual business policies or commitments included. The admin CLI requires
-an explicitly chosen password; no local default account is created automatically.
+| State | Phase 2 |
+| --- | --- |
+| Planned | Optional Gemini, validated/grounded output, save-first processing, safe retries, migration, verification. |
+| Implemented | Official google-genai adapter, async processor interface, configuration diagnostics, bounded calls, approved-only JSON FAQ loader, source snapshots, sanitized states, atomic claims, attempt history, candidates/revision checks, backed-up migration, review UI, tests and smoke commands. |
+| Tested | 83 pytest tests passed (including the original Phase 1 coverage), Ruff lint/format passed, pip check passed. Chrome demo + mocked Gemini failure/retry/candidate workflow passed; screenshots inspected. No real model called. |
+| Committed | Pending final verification/diff review. |
+| Pushed | Not yet pushed for Phase 2. |
+| Deployed | Not deployed; local only. SchoolOS, Vercel, and Neon unchanged. |
+
+Explicit demo mode remains. Gemini mode never silently falls back to demo.
+There is no automatic sending, billing activation, paid-model fallback, automatic
+provider retry, or continuation. Incoming valid enquiries are saved before processing.
+
+Default model: `gemini-3.5-flash-lite`. Its existence/structured output support was
+checked in [model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite),
+and free-tier input/output pricing independently in [official pricing](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.5-flash-lite)
+on 2026-10-27. Account-specific quota/billing enrollment remains unverified.
+The older 2.5 family is restricted to prior users; the selected 3.5 model is
+documented for new projects. Minimal thinking is configured for the default model.
+
+**Real Gemini verification: NOT RUN.** The explicit smoke command reported that
+Gemini mode and a server-side key were not configured. Mocked tests and browser
+verification are not evidence of live model access, language quality, or free quota.
+
+No owner FAQ was approved. The 13 JSON examples remain false, as does the status
+of the existing fictional Markdown FAQ. Approved fixtures are fictional/test-only.
+Private owner knowledge belongs in ignored `private/faq.json`.
+
+Migration verification uses temporary populated Phase 1 databases and checks
+receipts, exact message whitespace, manual draft, Reviewed status, demo history,
+administrator hash/session, backup integrity, and repeatability. No normal local
+database was deleted, recreated, or upgraded as part of automated verification.
+The existing `.env` was not overwritten. Unrelated `.vscode/` work is preserved.
 
 ## Remaining roadmap
 
-- Phase 2 (planned, not implemented): official Google GenAI SDK, Gemini,
-  approved FAQ, validated structured output, configurable model, timeouts,
-  quota/error handling, and continued manual review. No silent demo fallback.
+- Phase 2 implementation is complete; real-model verification awaits explicit
+  Gemini configuration and available free quota.
 - Phase 3 (planned): further polish, security/reliability checks, CI refinement,
   publishing/documentation completion, optional deployment preparation.
 
@@ -47,8 +76,9 @@ See README for the exact local setup and verification commands.
 
 ## Local handoff
 
-No administrator was created in the normal application database; choose local
-credentials with `python -m app.cli create-admin`. Browser verification used
+No administrator was created in the normal application database. Existing
+installations must preserve their administrator and run `python -m app.cli migrate-db`.
+New installations use `python -m app.cli create-admin`. Browser verification used
 discarded random test credentials and temporary databases. No app server is left
 running by the completed smoke check. No implementation issue remains from the
 checks performed; the local-prototype limitations in README still apply.

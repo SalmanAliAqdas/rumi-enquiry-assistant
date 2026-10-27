@@ -22,6 +22,36 @@ from app.config import Settings
 from app.db import init_db, make_engine
 from app.main import create_app
 from app.models import Admin
+from app.services import ProcessingFailure, ProcessingResult
+
+
+class MockReviewProcessor:
+    """An explicitly mocked provider, used only by this browser smoke script."""
+
+    def __init__(self):
+        self.calls = 0
+
+    async def process(self, message):
+        self.calls += 1
+        if self.calls == 1:
+            raise ProcessingFailure("quota")
+        result = ProcessingResult(
+            category="Website",
+            summary="Fictional mocked website requirements.",
+            reply_draft="Fictional approved fixture answer. Manual review required.",
+            clarification_questions=["Who is the intended audience?"],
+            faq_ids=["fictional-browser"],
+            needs_clarification=True,
+            review_reason="Fictional mocked response: audience needs clarification.",
+        )
+        result._faq_sources = [
+            {
+                "id": "fictional-browser",
+                "question": "Fictional fixture?",
+                "answer": "Fictional approved fixture answer.",
+            }
+        ]
+        return result
 
 
 def main():
@@ -42,7 +72,14 @@ def main():
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
         address = f"http://127.0.0.1:{port}"
-        app = create_app(Settings(database_url=database_url, cookie_secure=False, _env_file=None))
+        app = create_app(
+            Settings(
+                database_url=database_url,
+                cookie_secure=False,
+                processor_mode="demo",
+                _env_file=None,
+            )
+        )
         server = Server(
             Config(app, host="127.0.0.1", port=port, access_log=False, log_level="error")
         )
@@ -104,6 +141,52 @@ def main():
                 page.set_viewport_size({"width": 390, "height": 844})
                 page.screenshot(path=str(screenshots / "detail-mobile.png"), full_page=True)
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                # Keep the full Phase 1 path above; exercise new failure/retry UI
+                # with a scripted provider that cannot make network requests.
+                app.state.processor = MockReviewProcessor()
+                app.state.processing_mode = "gemini"
+                app.state.processing_model = "mocked-browser-model"
+                app.state.templates.env.globals["processing_label"] = (
+                    "Mocked Gemini verification — no model connected."
+                )
+                page.goto(address)
+                page.get_by_label("Your name").fill("Fictional Retry Example")
+                page.get_by_label("Email address").fill("retry@example.com")
+                page.get_by_label("What would you like to build?").fill(
+                    "A fictional website enquiry for mocked processing review."
+                )
+                page.get_by_role("button", name="Submit enquiry").click()
+                expect(page.get_by_text("Your enquiry is saved.")).to_be_visible()
+                page.goto(address + "/admin")
+                page.get_by_role("link", name="Open enquiry from Fictional Retry Example").click()
+                expect(page.get_by_text("Processing needs attention", exact=True)).to_be_visible()
+                page.screenshot(
+                    path=str(screenshots / "processing-failure-mobile.png"), full_page=True
+                )
+                page.get_by_label("Reply draft", exact=True).fill(
+                    "Human draft to preserve through the mocked retry."
+                )
+                page.get_by_label("Workflow status").select_option("Reviewed")
+                page.get_by_role("button", name="Save changes").click()
+                expect(page.locator("#draft-feedback")).to_contain_text("Changes saved")
+                page.get_by_role("button", name="Retry processing", exact=True).click()
+                expect(
+                    page.get_by_role("heading", name="Review the processing candidate")
+                ).to_be_visible()
+                expect(page.get_by_label("Reply draft", exact=True)).to_have_value(
+                    "Human draft to preserve through the mocked retry."
+                )
+                expect(page.get_by_label("Workflow status")).to_have_value("Reviewed")
+                page.screenshot(path=str(screenshots / "candidate-mobile.png"), full_page=True)
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.set_viewport_size({"width": 1440, "height": 1050})
+                page.screenshot(path=str(screenshots / "candidate-desktop.png"), full_page=True)
+                page.get_by_role("button", name="Apply candidate to saved draft").click()
+                expect(page.get_by_label("Reply draft", exact=True)).to_have_value(
+                    "Fictional approved fixture answer. Manual review required."
+                )
+                expect(page.get_by_label("Workflow status")).to_have_value("Reviewed")
+                assert app.state.processor.calls == 2
                 page.get_by_role("button", name="Sign out").click()
                 expect(page.get_by_role("heading", name="Welcome back.")).to_be_visible()
                 assert page.request.get(address + "/api/admin/enquiries").status == 401
@@ -111,7 +194,8 @@ def main():
                 browser.close()
                 print(
                     "Browser smoke passed: mobile submission, login, filtering, draft edit, "
-                    "persistence, logout; no JavaScript errors."
+                    "persistence, mocked failure/retry/candidate application, logout; "
+                    "no JavaScript errors."
                 )
                 print("Fictional-data screenshots saved in ignored artifacts/.")
         finally:

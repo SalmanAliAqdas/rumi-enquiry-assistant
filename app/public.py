@@ -5,6 +5,7 @@ from starlette.exceptions import HTTPException
 
 from app.db import get_db
 from app.models import Enquiry
+from app.processing import process_enquiry
 from app.schemas import Receipt, Submission
 
 router = APIRouter()
@@ -33,21 +34,20 @@ def existing_receipt(db: Session, data: Submission) -> Receipt | None:
 
 
 @router.post("/api/enquiries", response_model=Receipt, status_code=201, tags=["Public"])
-def submit(data: Submission, request: Request, db: Session = Depends(get_db)):
+async def submit(data: Submission, request: Request, db: Session = Depends(get_db)):
     if receipt := existing_receipt(db, data):
         return receipt
-    result = request.app.state.processor.process(data.message)
     enquiry = Enquiry(
         submission_key=str(data.submission_key),
         name=data.name,
         email=str(data.email),
         message=data.message,
-        category=result.category,
-        summary=result.summary,
-        reply_draft=result.reply_draft,
+        processing_mode=request.app.state.processing_mode,
     )
     db.add(enquiry)
     try:
+        db.flush()
+        enquiry_id, reference = enquiry.id, enquiry.reference
         db.commit()
     except IntegrityError:
         # Concurrent retries of the same submission must create just one record.
@@ -55,5 +55,5 @@ def submit(data: Submission, request: Request, db: Session = Depends(get_db)):
         if receipt := existing_receipt(db, data):
             return receipt
         raise
-    db.refresh(enquiry)
-    return Receipt(reference=enquiry.reference)
+    await process_enquiry(request.app, enquiry_id, initial=True)
+    return Receipt(reference=reference)

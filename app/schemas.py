@@ -40,6 +40,14 @@ class EnquiryRead(BaseModel):
     workflow_status: Workflow
     created_at: datetime
     updated_at: datetime
+    clarification_questions: list[str]
+    faq_sources: list[dict]
+    needs_clarification: bool
+    review_reason: str | None
+    processing_error_code: str | None
+    processing_error: str | None
+    candidate: dict | None
+    draft_revision: int
 
     @field_serializer("created_at", "updated_at")
     def serialize_utc(self, value: datetime) -> str:
@@ -53,3 +61,9 @@ class EnquiryPage(BaseModel):
     page: int
     page_size: int
     counts: dict[str, int]
+
+
+class ApplyCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    candidate_id: str = Field(min_length=32, max_length=32)
+    draft_revision: int = Field(ge=0)

@@ -13,8 +13,14 @@ from app.models import Admin
 
 def main():
     parser = argparse.ArgumentParser(description="Local administrator setup")
-    parser.add_argument("command", choices=["create-admin"])
-    parser.parse_args()
+    parser.add_argument("command", choices=["create-admin", "migrate-db"])
+    args = parser.parse_args()
+    if args.command == "migrate-db":
+        from app.migrations import migrate_database
+
+        backup = migrate_database(Settings().database_url)
+        print(f"Schema ready (version 2). Backup: {backup or 'new database; no previous data'}")
+        return
     engine = make_engine(Settings().database_url)
     init_db(engine)
     try:

@@ -1,3 +1,4 @@
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,10 +13,11 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import Settings
 from app.db import init_db, make_engine
+from app.gemini import build_processor
 from app.private import private_api
 from app.private import router as private_router
 from app.public import router as public_router
-from app.services import DEMO_LABEL, DemoProcessor
+from app.services import DEMO_LABEL
 
 ROOT = Path(__file__).parent
 
@@ -30,11 +32,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         app.state.engine.dispose()
 
-    app = FastAPI(title="Rumi Enquiry Assistant", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Rumi Enquiry Assistant", version="0.2.0", lifespan=lifespan)
     app.state.settings = settings
-    app.state.processor = DemoProcessor()
+    app.state.processor, app.state.processing_timeout = build_processor(settings)
+    app.state.processing_mode = (
+        settings.processor_mode if settings.processor_mode in {"demo", "gemini"} else "unconfigured"
+    )
+    app.state.processing_model = (
+        settings.gemini_model
+        if (
+            app.state.processing_mode == "gemini"
+            and re.fullmatch(r"gemini-[a-z0-9.-]{1,80}", settings.gemini_model)
+        )
+        else None
+    )
     app.state.templates = Jinja2Templates(directory=ROOT / "templates")
     app.state.templates.env.globals["demo_label"] = DEMO_LABEL
+    app.state.templates.env.globals["processing_label"] = (
+        DEMO_LABEL
+        if settings.processor_mode == "demo"
+        else "Gemini processing — manual review required."
+        if settings.processor_mode == "gemini"
+        else "Processing configuration needs administrator attention."
+    )
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
     )

@@ -6,8 +6,9 @@
     <h1>Good projects start<br>with a conversation.</h1>
     <p class="lead">Tell us what you’re working on. Share your idea, the challenge, or the process you’d like to improve.</p>
     <div class="services"><span>Websites</span><span>Mobile applications</span><span>Automation</span></div>
-    <div class="note"><span class="note-icon" aria-hidden="true">↗</span><div><strong>From idea to enquiry</strong><p>Your message is saved locally and a demo draft is prepared for private, manual review. No reply is sent automatically.</p></div></div>
-    <p class="demo-label">{{ demo_label }}</p>
+    <div class="note"><span class="note-icon" aria-hidden="true">↗</span><div><strong>From idea to enquiry</strong><p>Your message is saved locally before processing for private, manual review. No reply is sent automatically.</p></div></div>
+    <p class="demo-label">{{ processing_label }}</p>
+    {% if request.app.state.processing_mode == 'gemini' %}<p class="muted">In Gemini mode, your message is sent to Google for analysis. Name and email fields are not sent. Use fictional details only.</p>{% endif %}
     <p class="muted">Learning prototype. Use fictional details only; please don’t include sensitive information.</p>
   </section>
   <section class="card form-card" aria-labelledby="form-title">

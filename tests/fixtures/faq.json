@@ -1,0 +1,5 @@
+[
+  {"id":"fictional-web","question":"What is the fictional service?","answer":"For this fictional test only, the example team discusses website requirements.","approved":true},
+  {"id":"fictional-details","question":"Which details are useful?","answer":"For this fictional test only, share the intended audience and required features.","approved":true},
+  {"id":"unapproved-price","question":"What is the price?","answer":"UNAPPROVED TEST TEXT — must never be sent as business knowledge.","approved":false}
+]

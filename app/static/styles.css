@@ -8,6 +8,10 @@
   --soft:#edf4f0;
   --error:#a52d35;
 }
+.candidate-card, .processing-error {
+  margin-top: 24px;
+  overflow-wrap: anywhere;
+}
 
 * {
   box-sizing:border-box;

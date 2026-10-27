@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BeforeValidator
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, update
 from sqlmodel import Session, select
 
 from app.auth import (
@@ -16,7 +16,8 @@ from app.auth import (
 )
 from app.db import get_db
 from app.models import Category, Enquiry, WebSession, Workflow, utcnow
-from app.schemas import DraftUpdate, EnquiryPage, EnquiryRead
+from app.processing import attempts_for, process_enquiry
+from app.schemas import ApplyCandidate, DraftUpdate, EnquiryPage, EnquiryRead
 
 router = APIRouter()
 private_api = APIRouter(
@@ -161,6 +162,7 @@ def details(
             "csrf_token": session.csrf_token,
             "enquiry": get_enquiry(enquiry_id, db),
             "statuses": list(Workflow),
+            "attempts": attempts_for(db, enquiry_id),
         },
     )
 
@@ -183,11 +185,76 @@ def read_api(enquiry_id: int, db: Session = Depends(get_db)):
 def edit_api(enquiry_id: int, data: DraftUpdate, db: Session = Depends(get_db)):
     if not data.reply_draft.strip():
         raise HTTPException(422, "Reply draft cannot be blank.")
-    enquiry = get_enquiry(enquiry_id, db)
-    enquiry.reply_draft = data.reply_draft
-    enquiry.workflow_status = data.workflow_status
-    enquiry.updated_at = utcnow()
-    db.add(enquiry)
+    get_enquiry(enquiry_id, db)
+    db.exec(
+        update(Enquiry)
+        .where(Enquiry.id == enquiry_id)
+        .values(
+            reply_draft=data.reply_draft,
+            workflow_status=data.workflow_status,
+            draft_revision=Enquiry.draft_revision + 1,
+            updated_at=utcnow(),
+        )
+    )
     db.commit()
-    db.refresh(enquiry)
-    return enquiry
+    return get_enquiry(enquiry_id, db)
+
+
+@private_api.post(
+    "/enquiries/{enquiry_id}/retry",
+    dependencies=[Depends(csrf_protect)],
+    response_model=EnquiryRead,
+)
+async def retry_api(enquiry_id: int, request: Request, db: Session = Depends(get_db)):
+    get_enquiry(enquiry_id, db)
+    db.rollback()  # End the authentication/read transaction before awaiting the provider.
+    if not await process_enquiry(request.app, enquiry_id):
+        raise HTTPException(
+            409, "Only failed, pending, or interrupted (over 90 seconds) enquiries can be retried."
+        )
+    return EnquiryRead.model_validate(get_enquiry(enquiry_id, db))
+
+
+@private_api.post(
+    "/enquiries/{enquiry_id}/apply-candidate",
+    dependencies=[Depends(csrf_protect)],
+    response_model=EnquiryRead,
+)
+def apply_candidate(enquiry_id: int, data: ApplyCandidate, db: Session = Depends(get_db)):
+    row = get_enquiry(enquiry_id, db)
+    if not row.candidate or row.candidate["id"] != data.candidate_id:
+        raise HTTPException(
+            409, "Candidate changed or was already applied. Reload and review again."
+        )
+    candidate = row.candidate
+    values = {
+        name: candidate[name]
+        for name in (
+            "category",
+            "summary",
+            "reply_draft",
+            "clarification_questions",
+            "needs_clarification",
+            "review_reason",
+            "faq_sources",
+        )
+    }
+    result = db.exec(
+        update(Enquiry)
+        .where(
+            Enquiry.id == enquiry_id,
+            Enquiry.draft_revision == data.draft_revision,
+            Enquiry.candidate["id"].as_string() == data.candidate_id,
+            Enquiry.processing_status != "Processing",
+        )
+        .values(
+            **values, candidate=None, draft_revision=Enquiry.draft_revision + 1, updated_at=utcnow()
+        )
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        raise HTTPException(
+            409, "The draft changed. Reload and review before applying this candidate."
+        )
+    db.commit()
+    return get_enquiry(enquiry_id, db)

@@ -12,6 +12,8 @@ __pycache__/
 data/
 exports/
 private/
+backups/
+knowledge/
 *.log
 *.egg-info/
 build/

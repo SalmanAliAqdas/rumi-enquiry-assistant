@@ -1,35 +1,54 @@
 # Rumi Enquiry Assistant
 
-A local FastAPI learning prototype that saves software-service enquiries and
-prepares deterministic reply drafts for private review.
+A local FastAPI application that saves software-service enquiries and prepares
+private reply drafts for human review. Phase 2 adds optional Gemini processing
+through the official `google-genai` Python SDK. Explicit demo mode remains
+available without an API key. No replies are sent automatically.
 
-**Demo processing — no AI model connected.** No API key is needed. No messages,
-emails, or model requests are sent. Use clearly fictional data only.
+## Implemented features
 
-## Phase 1 features
+- Validated public form, SQLite persistence, receipt references, idempotent retries.
+- Save-first processing: model failures preserve the enquiry and public receipt.
+- Explicit demo/Gemini modes, bounded structured output, approved FAQ sources,
+  clarification questions, English drafts, and sanitized private diagnostics.
+- Private dashboard with search, category/status filters, pagination, counts,
+  editable drafts, source snapshots, and processing history.
+- Authenticated/CSRF-protected retry and candidate application, preserving manual
+  drafts and Reviewed/Closed workflow statuses through processing.
+- Argon2 passwords, expiring/revocable server-side sessions, CSRF, escaped HTML,
+  localhost binding, and request-size limits.
+- Backed-up Phase 1 migration, isolated tests, browser checks, and GitHub Actions.
 
-- Public enquiry form with validated name, email, and a 20–3000-character message.
-- Receipt reference, submission feedback, and idempotent retries to prevent accidental duplicates.
-- SQLite persistence with separate original message, category, summary, draft,
-  processing mode/status, workflow status, and UTC timestamps.
-- Deterministic keyword matching for Website, Mobile application, Automation, and
-  Other / needs clarification. Multiple categories or unknown keywords request clarification.
-- Single administrator, Argon2 password hashing, expiring opaque server-side
-  sessions, session rotation on login, revocation on logout, and CSRF protection.
-- Private dashboard and API with search, category/status filters, pagination,
-  workflow counts, original enquiry details, editable drafts, and a copy button.
-- Responsive Jinja2 interface, escaped content, local assets, and automated checks.
+## Upgrade an existing installation (PowerShell)
 
-There is no default administrator or working default password.
-
-## Requirements and setup (PowerShell)
-
-Python 3.13 is the verified version; the source supports Python 3.11 or newer.
-Run all commands from the project folder. The commands below call the virtual
-environment directly, so PowerShell activation or an execution-policy change is unnecessary.
+Run from the repository root. Stop the app first. **Preserve `.env` and the
+database; do not recreate the administrator.**
 
 ```powershell
-Set-Location 'C:\Users\SALMAN\Downloads\Rumi Enquiry Assistant'
+.\.venv\Scripts\python -m pip install -r requirements.lock
+.\.venv\Scripts\python -m pip install --no-deps -e ".[dev]"
+.\.venv\Scripts\python -m app.cli migrate-db
+.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+`migrate-db` uses the configured `DATABASE_URL`. It first creates a uniquely named,
+integrity-checked SQLite backup under ignored `backups/`, including committed WAL
+data. An explicit transaction adds columns and the processing-attempt table,
+preserving receipts, messages, drafts, categories, workflow/processing statuses,
+timestamps, administrator hashes, and sessions. It is safe to repeat; each run
+makes a distinct backup. New databases need no previous-data backup.
+
+Startup refuses a Phase 1 schema until migration. `create_all` does not substitute
+for column migration. Backups contain private data and password hashes. For
+rollback, stop the app, preserve the upgraded file separately, and restore a
+verified backup with the matching Phase 1 application version. Never overwrite
+a live SQLite file.
+
+## First installation
+
+Python 3.13 is verified; Python 3.11+ is required. From a clone's root:
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.lock
 .\.venv\Scripts\python -m pip install --no-deps -e ".[dev]"
@@ -37,77 +56,187 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python -m app.cli create-admin
 ```
 
-Copy the environment example only on first setup; preserve an existing `.env`.
-The CLI prompts for a username and a hidden, confirmed password of 12–256
-characters. It stores an Argon2 hash in SQLite and refuses to replace an existing
-administrator. No password is placed in a command, frontend asset, or environment file.
+Copy `.env.example` only when `.env` does not already exist. The CLI prompts for a
+username and hidden, confirmed password (12–256 characters). It stores an Argon2
+hash and refuses to replace an existing administrator. No default account exists.
+Virtual environment activation is optional.
 
-`requirements.lock` pins the complete application/test dependency set used for
-verification. For deliberate dependency upgrades, install `-e ".[dev]"` in a fresh
-environment, run the checks, and regenerate the pins. The optional browser extra
-is separate from the normal dependency lock.
+`requirements.lock` pins the application/test dependency closure verified on
+Windows/Python 3.13. Browser dependencies are an optional extra. For deliberate
+upgrades, install `-e ".[dev]"` in a fresh environment, run checks, and regenerate pins.
 
 ## Configuration
 
-Pydantic Settings reads environment variables and optional `.env` values.
+Pydantic Settings reads environment variables and the existing `.env`. Update
+individual settings without replacing the file. Safe defaults:
 
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | `sqlite:///./data/rumi.db` | Local SQLite only; parent directory is created automatically. |
-| `COOKIE_SECURE` | `false` | Required for HTTP localhost; a future HTTPS deployment must use `true`. |
-| `SESSION_MINUTES` | `60` | Absolute session lifetime, from 1 to 1440 minutes; activity does not extend it. |
+```dotenv
+DATABASE_URL=sqlite:///./data/rumi.db
+COOKIE_SECURE=false
+SESSION_MINUTES=60
+PROCESSOR_MODE=demo
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+AI_TIMEOUT_SECONDS=20
+AI_MAX_OUTPUT_TOKENS=1200
+FAQ_PATH=private/faq.json
+```
 
-All commands use the same database setting. Database files, `.env`, virtual
-environments, private exports, and browser artifacts are ignored by Git.
+To opt in, set `PROCESSOR_MODE=gemini` and enter your key locally as
+`GEMINI_API_KEY=<your-server-side-key>`. Keep it out of Git, commands, frontend
+assets, prompts, and screenshots. The app represents it as a Pydantic secret and
+never returns it. Restart after configuration changes.
 
-## Run locally
+AI timeout must be 1–60 seconds; output budget 256–2000 tokens. The processor
+factory validates AI-only settings so missing/invalid AI configuration cannot
+prevent valid enquiries being saved. Failures appear privately. Invalid database
+or session settings remain startup errors. Only local SQLite is supported.
+
+`COOKIE_SECURE=false` permits HTTP localhost; future HTTPS hosting must use true.
+Session lifetime is absolute (`SESSION_MINUTES`, 1–1440); activity does not extend
+it. Use one hostname consistently because localhost/127.0.0.1 cookies differ.
+
+### Model and free-tier verification
+
+Default: **`gemini-3.5-flash-lite`**. Model existence/structured-output support and
+free-tier pricing were checked separately on 2026-10-27:
+
+- [Official model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite)
+- [Official pricing](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.5-flash-lite)
+- [Project-specific rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+
+Standard input/output are listed as free of charge on the free tier. This does
+not verify an individual project's available quota. Check the project's free-tier
+status and active limits in AI Studio. The app cannot determine billing enrollment
+from a key; use a project without billing. Free-tier content may be used to improve
+Google's products: use fictional messages while evaluating this prototype.
+
+The 2.5 family is restricted to existing users; 3.5 Flash-Lite is recommended for
+new projects. The adapter uses its documented minimal thinking level to leave
+more of the conservative output budget for the structured answer.
+
+No billing activation, alternate-model routing, paid fallback, grounding tools,
+SDK retries, or automatic continuation is used. Request storage/logging is disabled
+in the generation config. The model is configurable; verify its pricing and
+availability before changing it.
+
+## Approve owner knowledge
+
+`docs/faq.example.json` contains **13 fictional examples, all `approved=false`**.
+`docs/EXAMPLE_FAQ.md` stays fictional and unapproved. Neither becomes RumiWare
+policy. Approved test fixtures are fictional and used only for verification.
+
+On first configuration, create a private file without overwriting existing knowledge:
+
+```powershell
+New-Item -ItemType Directory -Force private
+Copy-Item docs/faq.example.json private/faq.json
+```
+
+The file is a JSON array of entries in this format:
+
+```json
+{
+  "id": "owner-chosen-id",
+  "question": "A question reviewed by the owner",
+  "answer": "Replace with verified owner-approved facts in English.",
+  "approved": false
+}
+```
+
+Review and replace each example. Set `approved: true` only for explicitly approved
+real answers. Write approved answers in English for the initial English-draft
+workflow; keep uncertain entries false. Do not approve placeholders in bulk.
+
+Only explicit JSON boolean approvals are loaded. IDs must be unique and use
+letters/numbers/hyphens/underscores. Limits: 100 entries, 100 KB file, 60-character
+IDs, 300-character questions, 1500-character answers. Knowledge reloads per attempt.
+Private knowledge, databases, backups, exports, `.env`, and screenshots are ignored.
+
+Gemini returns category, summary, proposed draft, up to three questions, approved
+FAQ IDs, `needs_clarification`, and `review_reason`. Pydantic validates lengths,
+enums, fields, and source IDs. Unknown fields/confidence percentages are rejected.
+
+Schema validation cannot establish factual grounding. The proposed draft is
+validated, but the saved reply's business facts are deliberately rendered from
+the exact cited approved answers, with a neutral English acknowledgement and
+review notice. Questions are shown separately. No applicable cited source means
+a neutral clarification/handoff draft and a human-review reason. This occurs
+only after valid model analysis; a failed model call never becomes demo output
+or a fake success. Oversized composed drafts are rejected.
+
+Source snapshots show what was approved at generation time. They are historical
+evidence; review old candidates against current owner knowledge before applying them.
+
+## Run and review
 
 ```powershell
 .\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 - Form: <http://127.0.0.1:8000/>
-- Admin login: <http://127.0.0.1:8000/admin/login>
-- Private dashboard: <http://127.0.0.1:8000/admin>
-- API documentation: <http://127.0.0.1:8000/docs>
+- Login: <http://127.0.0.1:8000/admin/login>
+- Dashboard: <http://127.0.0.1:8000/admin>
+- API docs: <http://127.0.0.1:8000/docs>
 
-Use the same hostname consistently: cookies for `localhost` and `127.0.0.1` are
-separate. Keep the server bound to localhost. Stop it with Ctrl+C.
+Demo mode visibly states **“Demo processing — no AI model connected.”** Keyword
+matching handles website/mobile/automation categories and requests clarification
+for unknown/multiple matches. Gemini mode is labelled and the form discloses that
+the message is sent to Google. Separate name/email fields are not sent; personal
+information written inside the message is still part of that message.
 
-## API overview
+Processing states (`Pending`, `Processing`, `Completed`, `Failed`) are separate
+from workflow (`New`, `Reviewed`, `Closed`). Completed does not mean approved.
+Private diagnostics distinguish configuration/key/FAQ problems, authentication,
+model availability, quota, timeout, provider failures, blocked/empty/truncated
+responses, invalid output/sources, and interrupted attempts. Only fixed sanitized
+messages are stored; raw exceptions/provider responses are not logged or exposed.
 
-| Method / route | Access / behavior |
+Authenticated, CSRF-protected retry accepts Failed/Pending records and Processing
+claims interrupted for over 90 seconds. It uses the current server configuration.
+Mode changes require explicit configuration; no automatic fallback occurs.
+Completed records cannot be retried through this action.
+
+Successful retries create separate candidates and preserve the saved draft and
+workflow. Save unsaved edits, inspect questions and sources, then explicitly use
+**Apply candidate to saved draft** if appropriate. This replaces generated fields
+and draft, keeps workflow status, and checks candidate identity/draft revision to
+reject stale applications. First submissions populate an initial draft only if
+no administrator edited it or changed workflow while processing. Replies stay drafts.
+
+## Data flow and API
+
+Browser → Pydantic → committed original enquiry → short atomic processing claim →
+bounded processor call with no open database transaction → saved result/failure →
+minimal public receipt. Duplicate submission keys do not repeat processing.
+
+| Route | Access / behavior |
 | --- | --- |
-| `POST /api/enquiries` | Public; validates and saves an enquiry, returns only a receipt reference/message. |
-| `GET /api/admin/enquiries` | Admin; `q`, `category`, `status`, `page`, and `page_size` filters. |
-| `GET /api/admin/enquiries/{id}` | Admin; private enquiry detail. |
-| `PATCH /api/admin/enquiries/{id}` | Admin + CSRF; edits `reply_draft` and `workflow_status`. |
-| `POST /admin/login` | Pre-login session + form CSRF token; rotates session on successful login. |
-| `POST /admin/logout` | Admin + CSRF; deletes the session and cookie. |
+| `POST /api/enquiries` | Public; name/email/message/UUID submission_key; receipt only. |
+| `GET /api/admin/enquiries` | Admin; q/category/status/page/page_size filters. |
+| `GET /api/admin/enquiries/{id}` | Admin; private fields, diagnostic, candidate. |
+| `PATCH /api/admin/enquiries/{id}` | Admin + CSRF; reply_draft/workflow_status. |
+| `POST /api/admin/enquiries/{id}/retry` | Admin + CSRF; retry eligible processing. |
+| `POST /api/admin/enquiries/{id}/apply-candidate` | Admin + CSRF; candidate_id/draft_revision. |
+| `POST /admin/login`, `POST /admin/logout` | Form CSRF; rotation/revocation. |
 
-Public JSON submissions contain `name`, `email`, `message`, and `submission_key`
-(a newly generated UUID). The form generates this key. Retrying the same key and
-same validated fields returns the same receipt; reusing the key for different
-content returns 409. There is no public enquiry lookup. A reference is not a credential.
+The form keeps one UUID across network retries. Reusing it with different validated
+content returns 409. There is no public enquiry lookup. Boundary whitespace is
+trimmed; internal message spaces/newlines are preserved separately from generated
+fields. Email validation may normalize the domain. All timestamps are UTC; private
+API values have an explicit UTC offset. SQLite stores timezone-naive UTC.
 
-Names, email, and messages are trimmed at their boundaries. Internal message
-whitespace and line breaks are preserved exactly; the summary is a separate
-whitespace-normalized excerpt. Email validation may normalize the domain.
-Private timestamps are returned as ISO 8601 UTC. SQLite stores them without a
-timezone marker; the application always interprets these values as UTC.
+Private APIs use the session cookie and `X-CSRF-Token` from authenticated page
+metadata. The cookie is HttpOnly, SameSite=Strict, and expiring; the database stores
+only a hash of its opaque ID. Anonymous APIs return 401; protected HTML redirects
+to login. Jinja2 escapes customer and generated content.
 
-The allowed workflow values are `New`, `Reviewed`, and `Closed`; an administrator
-can move between them. Generated drafts never imply approval or automatic sending.
+The model receives only the message and approved FAQ entries, under instructions
+treating customer content as untrusted data. It has no tools, secret values,
+customer directory, or database access. Schemas/prompts do not guarantee semantic
+correctness; all output still requires human review.
 
-Private API calls use the cookie established by form login. Mutations also
-require `X-CSRF-Token`, available in the authenticated page's `csrf-token` meta
-tag (logout uses a hidden form field). The session cookie is HttpOnly,
-SameSite=Strict, and expires after the configured absolute lifetime. Only a hash
-of its random identifier is stored in the database. Credentials never enter API
-responses. Private API requests return 401 when unauthorized; protected HTML
-pages redirect to login.
-
-## Checks
+## Verification
 
 ```powershell
 .\.venv\Scripts\python -m pytest -q
@@ -116,68 +245,58 @@ pages redirect to login.
 .\.venv\Scripts\python -m pip check
 ```
 
-Tests create isolated temporary SQLite files and random test credentials. They
-do not use local enquiry records or any model service. GitHub Actions runs pytest
-and Ruff using Python 3.13 on pushes and pull requests.
+Tests/CI use temporary databases and mocked providers with no API key. An autouse
+fixture blocks live SDK model methods; a transport test runs the real SDK serializer
+against mock HTTP. Migration tests use populated Phase 1 records/admin/session.
+GitHub Actions runs pytest and Ruff on Ubuntu/Python 3.13.
 
-Optional real-browser smoke check (requires installed Google Chrome):
+Optional browser check (installed Google Chrome required):
 
 ```powershell
 .\.venv\Scripts\python -m pip install -e ".[browser]"
 .\.venv\Scripts\python -m scripts.browser_smoke
 ```
 
-This starts a temporary localhost server with an isolated temporary database,
-checks a full browser workflow at desktop/mobile sizes, and saves fictional-data
-screenshots to ignored `artifacts/`. It stops its server afterward. Browser
-automation does not create an administrator in your application database.
+This retains the demo workflow and adds mocked quota failure, retry, candidate
+review/application, and manual-draft/status preservation. It uses temporary data
+and random credentials, saves fictional screenshots to ignored `artifacts/`, and
+stops its localhost server afterward. It never calls a real model.
 
-## Request flow and structure
+Explicit **real Gemini** verification:
 
-The browser sends JSON to a public route. Pydantic validates and trims the input.
-The route calls the replaceable `Processor` interface, and `DemoProcessor`
-returns keyword-based fields. SQLModel saves the original and generated fields
-in SQLite; the public route returns a receipt only. Private routes verify the
-session before reading records; updates verify CSRF, validate the draft/status,
-and commit the changes. Jinja2 escapes all values rendered into HTML.
-
-```text
-app/
-  main.py, config.py           Application factory, lifespan, settings, safeguards
-  db.py, models.py, schemas.py Persistence and validation
-  public.py, private.py        Public/private routes
-  auth.py, cli.py              Sessions, CSRF, password hashing, admin creation
-  services.py                 Replaceable processor interface and demo implementation
-  templates/, static/         HTML, CSS, minimal JavaScript
-tests/                        Isolated API, security, workflow, and CLI tests
-scripts/browser_smoke.py       Optional real-browser verification
-docs/EXAMPLE_FAQ.md            Fictional examples, not approved business content
-docs/PROJECT_STATUS.md         Implementation and delivery evidence
+```powershell
+.\.venv\Scripts\python -m scripts.gemini_smoke
 ```
 
-## Limitations and planned work
+This sends up to three fictional English/Urdu/Roman Urdu messages only when Gemini
+mode and a key are explicitly configured. Otherwise it reports NOT RUN. It stops
+at the first failure without retries, prints no key/generated content, saves no
+enquiries, and sends no replies. Mock success does not verify live model access
+or free quota. Actual results are recorded in `docs/PROJECT_STATUS.md`.
 
-Phase 1 is a single-admin local prototype. It has no email delivery, public
-receipt lookup, password recovery UI, distributed rate limiting, database
-migrations, multi-user permissions, retention tooling, or deployment setup.
-SQLite and its password hashes are local files: protect the Windows account and
-disk. Re-running the CLI will not reset an existing administrator.
+## Structure and limitations
 
-Keyword matching is intentionally limited and can miss context or negation.
-Summary text is only an excerpt. No actual prices, delivery commitments, client
-names, contact details, or business policies are supplied. Example FAQ content is
-fictional and needs review before any business use.
+`main.py` configures the factory; config/db/models/schemas handle settings and
+persistence. `services.py` defines the async processor/demo; `gemini.py` isolates
+the provider; `knowledge.py` loads approved facts; `processing.py` coordinates
+claims/results/history. Routes, auth, CLI/migration, templates/static assets,
+tests, and verification scripts remain separate.
 
-Phase 2 is planned: Gemini through the then-current official Google GenAI SDK,
-approved FAQ content, validated structured output, configurable model selection,
-timeouts, quota/error handling, and manual review. Failed model processing must
-be visible and must never silently become a demo answer.
+This is a local single-admin prototype with request-based processing, no worker
+queue. First submission waits up to the processing timeout. Disconnect/restart
+can interrupt processing after saving; an admin must recover it. Claims protect
+one enquiry, not global provider concurrency/quota. No background automatic retry
+or reprocessing of completed records occurs.
 
-Phase 3 is planned: further UI polish and security/reliability review, CI
-refinement, documentation, publishing, and optional deployment preparation.
-Basic documentation and CI are already included in Phase 1. Vercel and Neon are
-not configured or modified.
+There is no email delivery, password recovery UI, retention tooling, distributed
+rate limiting, multi-user permissions, or deployment setup. Protect the local
+account/disk. Evaluate real-model language understanding and source relevance;
+verify summaries, questions, applicability of approved facts, and every reply.
 
-Implementation references: [FastAPI password hashing](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/),
-[SQLModel session dependencies](https://sqlmodel.tiangolo.com/tutorial/fastapi/session-with-dependency/),
-and [Starlette TestClient](https://starlette.dev/testclient/).
+Phase 3 remains planned: further UI/accessibility polish, security/reliability
+review, quota/rate-limit/retention decisions, CI/documentation refinement, and
+optional deployment preparation. SchoolOS, Vercel, and Neon are not modified.
+
+References: [Google quickstart](https://ai.google.dev/gemini-api/docs/quickstart),
+[structured output](https://ai.google.dev/gemini-api/docs/structured-output),
+[official SDK](https://googleapis.github.io/python-genai/).

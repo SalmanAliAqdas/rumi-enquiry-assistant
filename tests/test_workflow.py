@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 from uuid import uuid4
 
@@ -260,11 +261,11 @@ def test_safe_html_and_demo_labelling(admin_client):
     ],
 )
 def test_ambiguous_or_unknown_gets_clarification(message):
-    result = DemoProcessor().process(message)
+    result = asyncio.run(DemoProcessor().process(message))
     assert result.category == "Other / needs clarification"
     assert "clarify" in result.reply_draft
     assert "DEMO DRAFT" in result.reply_draft
-    assert result == DemoProcessor().process(message)
+    assert result == asyncio.run(DemoProcessor().process(message))
 
 
 def test_host_validation(client):
