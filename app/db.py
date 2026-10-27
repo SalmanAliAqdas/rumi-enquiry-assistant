@@ -9,7 +9,7 @@ def make_engine(url: str):
     database = make_url(url).database
     if database and database != ":memory:":
         Path(database).parent.mkdir(parents=True, exist_ok=True)
-    return create_engine(url, connect_args={"check_same_thread": False})
+    return create_engine(url, connect_args={"check_same_thread": False}, hide_parameters=True)
 
 
 def init_db(engine):

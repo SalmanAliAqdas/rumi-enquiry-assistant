@@ -1,20 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Private dashboard · Rumi Enquiry Assistant{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Private workspace</p><h1>Enquiry inbox</h1><p class="muted">A little clarity for every conversation.</p></div>{% include "logout.html" %}</div>
-<p class="demo-banner">{{ processing_label }} All replies are drafts for manual review.</p>
-<div class="counts">{% for status, count in results.counts.items() %}<div class="card count"><span>{{ status }}</span><strong>{{ count }}</strong></div>{% endfor %}</div>
-<section class="card inbox">
+<div class="page-heading">
+  <div><p class="eyebrow">Private workspace</p><h1>Enquiry inbox</h1><p class="muted">Understand the request. Review the draft. Choose the next step.</p></div>
+  {% include "logout.html" %}
+</div>
+<p class="demo-banner">{{ processing_label }} Completed processing does not mean a reply is approved or sent.</p>
+{% include "configuration.html" %}
+<div class="counts" aria-label="Workflow counts across all enquiries">
+  {% for status, count in results.counts.items() %}<div class="card count"><span>{{ status }}</span><strong>{{ count }}</strong></div>{% endfor %}
+</div>
+<section class="card inbox" aria-label="Enquiries">
   <form method="get" action="/admin" class="filters">
     <div><label for="q">Search enquiries</label><input id="q" name="q" value="{{ filters.q }}" maxlength="100" placeholder="Name, email, message, reference"></div>
     <div><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>{% for category in categories %}<option value="{{ category.value }}" {% if filters.category == category %}selected{% endif %}>{{ category.value }}</option>{% endfor %}</select></div>
-    <div><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{ status.value }}" {% if filters.status == status %}selected{% endif %}>{{ status.value }}</option>{% endfor %}</select></div>
+    <div><label for="status">Workflow status</label><select id="status" name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{ status.value }}" {% if filters.status == status %}selected{% endif %}>{{ status.value }}</option>{% endfor %}</select></div>
+    <div class="page-size"><label for="page_size">Per page</label><select id="page_size" name="page_size">{% for size in [5,10,25,50] %}<option value="{{ size }}" {% if filters.page_size == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></div>
     <button class="button primary" type="submit">Apply filters</button><a href="/admin" class="text-link">Reset</a>
   </form>
-  <div class="table-scroll"><table><caption>{{ results.total }} matching enquiries · newest first</caption><thead><tr><th scope="col">Customer / reference</th><th scope="col">Category</th><th scope="col">Workflow</th><th scope="col">Processing</th><th scope="col">Received (UTC)</th><th scope="col">Review</th></tr></thead><tbody>
-  {% for enquiry in results.items %}<tr><td><strong>{{ enquiry.name }}</strong><span class="table-secondary">{{ enquiry.reference }}</span></td><td>{{ enquiry.category.value }}</td><td><span class="badge">{{ enquiry.workflow_status.value }}</span></td><td>{{ enquiry.processing_mode }} · {{ enquiry.processing_status }}{% if enquiry.candidate %}<span class="table-secondary">Candidate awaiting review</span>{% endif %}</td><td>{{ enquiry.created_at.strftime('%d %b %Y · %H:%M') }}</td><td><a class="text-link" href="/admin/enquiries/{{ enquiry.id }}">Open<span class="sr-only"> enquiry from {{ enquiry.name }}</span> ↗</a></td></tr>
-  {% else %}<tr><td colspan="6" class="empty">No enquiries found. Try another filter, or submit a fictional enquiry from the public form.</td></tr>{% endfor %}
-  </tbody></table></div>
-  <nav class="pagination" aria-label="Enquiry pages"><span>Page {{ results.page }} · {{ results.total }} total</span><div>{% if results.page > 1 %}<a class="button secondary" href="{{ previous_url }}">Previous</a>{% endif %}{% if results.page * results.page_size < results.total %}<a class="button secondary" href="{{ next_url }}">Next</a>{% endif %}</div></nav>
+  <p class="small muted">Processing and workflow are separate. Open an enquiry to see its saved reply and supporting sources.</p>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Enquiry results, scroll horizontally on small screens">
+    <table>
+      <caption>{{ results.total }} matching enquiries · newest first</caption>
+      <thead><tr><th scope="col">Customer needs</th><th scope="col">Workflow</th><th scope="col">Processing</th><th scope="col">Received (UTC)</th><th scope="col">Next step</th></tr></thead>
+      <tbody>
+      {% for enquiry in results.items %}
+      <tr>
+        <td class="needs-cell"><strong>{{ enquiry.name }}</strong><span class="table-secondary">{{ enquiry.reference }}</span><p class="summary-preview">{{ enquiry.summary or 'No summary yet. Open the original enquiry for review.' }}</p><span class="small muted">{{ enquiry.category.value }}</span></td>
+        <td><span class="badge">{{ enquiry.workflow_status.value }}</span></td>
+        <td><span class="badge {{ 'badge-error' if enquiry.processing_status == 'Failed' else '' }}">{{ enquiry.processing_status }}</span><span class="table-secondary">{{ enquiry.processing_mode }}</span>{% if enquiry.candidate %}<strong class="candidate-label">Candidate awaiting review</strong>{% endif %}</td>
+        <td>{{ enquiry.created_at.strftime('%d %b %Y · %H:%M') }}</td>
+        <td class="next-cell"><p>{{ next_action(enquiry) if next_action is defined else 'Open to review the saved draft.' }}</p><a class="text-link" href="/admin/enquiries/{{ enquiry.id }}">Open<span class="sr-only"> enquiry from {{ enquiry.name }}</span> ↗</a></td>
+      </tr>
+      {% else %}<tr><td colspan="5" class="empty">No enquiries on this page. Try another filter or reset the view. Submit a fictional enquiry to start reviewing.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="pagination" aria-label="Enquiry pages">
+    <span>Page {{ results.page }} · {{ results.total }} total</span>
+    <div>{% if results.page > 1 %}<a class="button secondary" href="{{ previous_url }}">Previous</a>{% endif %}{% if results.page * results.page_size < results.total %}<a class="button secondary" href="{{ next_url }}">Next</a>{% endif %}</div>
+  </nav>
 </section>
 {% endblock %}

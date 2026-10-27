@@ -1,9 +1,10 @@
 # Rumi Enquiry Assistant
 
 A local FastAPI application that saves software-service enquiries and prepares
-private reply drafts for human review. Phase 2 adds optional Gemini processing
-through the official `google-genai` Python SDK. Explicit demo mode remains
-available without an API key. No replies are sent automatically.
+private reply drafts for a single administrator reviewing software-service
+enquiries. Phases 1–3 implement the agreed local prototype, including optional
+Gemini through the official `google-genai` SDK. Explicit demo mode needs no API
+key. No replies are sent automatically. Hosting is a separate optional next step.
 
 ## Implemented features
 
@@ -18,6 +19,8 @@ available without an API key. No replies are sent automatically.
 - Argon2 passwords, expiring/revocable server-side sessions, CSRF, escaped HTML,
   localhost binding, and request-size limits.
 - Backed-up Phase 1 migration, isolated tests, browser checks, and GitHub Actions.
+- Private setup/knowledge status, suggested next steps, visible unsaved state,
+  revision-checked browser saves, accessible controls, and per-process local limits.
 
 ## Upgrade an existing installation (PowerShell)
 
@@ -28,7 +31,7 @@ database; do not recreate the administrator.**
 .\.venv\Scripts\python -m pip install -r requirements.lock
 .\.venv\Scripts\python -m pip install --no-deps -e ".[dev]"
 .\.venv\Scripts\python -m app.cli migrate-db
-.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log --reload
 ```
 
 `migrate-db` uses the configured `DATABASE_URL`. It first creates a uniquely named,
@@ -43,6 +46,11 @@ for column migration. Backups contain private data and password hashes. For
 rollback, stop the app, preserve the upgraded file separately, and restore a
 verified backup with the matching Phase 1 application version. Never overwrite
 a live SQLite file.
+
+Phase 3 adds no database columns or new runtime dependencies. An installation
+already migrated for Phase 2 needs only the updated source and an application
+restart; preserve its `.env`, private FAQ, database, and administrator. Running
+`migrate-db` again is optional and makes another backup.
 
 ## First installation
 
@@ -130,7 +138,9 @@ On first configuration, create a private file without overwriting existing knowl
 
 ```powershell
 New-Item -ItemType Directory -Force private
-Copy-Item docs/faq.example.json private/faq.json
+if (-not (Test-Path private/faq.json)) {
+    Copy-Item docs/faq.example.json private/faq.json
+}
 ```
 
 The file is a JSON array of entries in this format:
@@ -168,10 +178,13 @@ or a fake success. Oversized composed drafts are rejected.
 Source snapshots show what was approved at generation time. They are historical
 evidence; review old candidates against current owner knowledge before applying them.
 
+See [the owner guide](docs/OWNER_GUIDE.md) for approving individual verified facts,
+testing a question, the daily review workflow, troubleshooting, and safe recovery.
+
 ## Run and review
 
 ```powershell
-.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log --reload
 ```
 
 - Form: <http://127.0.0.1:8000/>
@@ -215,7 +228,8 @@ minimal public receipt. Duplicate submission keys do not repeat processing.
 | `POST /api/enquiries` | Public; name/email/message/UUID submission_key; receipt only. |
 | `GET /api/admin/enquiries` | Admin; q/category/status/page/page_size filters. |
 | `GET /api/admin/enquiries/{id}` | Admin; private fields, diagnostic, candidate. |
-| `PATCH /api/admin/enquiries/{id}` | Admin + CSRF; reply_draft/workflow_status. |
+| `PATCH /api/admin/enquiries/{id}` | Admin + CSRF; reply_draft/workflow_status, optional expected_revision. |
+| `GET /api/admin/status` | Admin; safe setup metadata, key presence only, approved count. |
 | `POST /api/admin/enquiries/{id}/retry` | Admin + CSRF; retry eligible processing. |
 | `POST /api/admin/enquiries/{id}/apply-candidate` | Admin + CSRF; candidate_id/draft_revision. |
 | `POST /admin/login`, `POST /admin/logout` | Form CSRF; rotation/revocation. |
@@ -230,6 +244,25 @@ Private APIs use the session cookie and `X-CSRF-Token` from authenticated page
 metadata. The cookie is HttpOnly, SameSite=Strict, and expiring; the database stores
 only a hash of its opaque ID. Anonymous APIs return 401; protected HTML redirects
 to login. Jinja2 escapes customer and generated content.
+
+Page numbers are bounded to 1–1,000,000; page sizes to 1–50. The UI offers 5, 10,
+25, or 50 records per page and retains filters in previous/next links.
+
+Browser draft saves include `expected_revision`; stale saves fail with 409 and
+preserve editor contents. API clients that omit it retain explicit last-write
+semantics for compatibility. Candidate application always checks its revision.
+
+The private setup panel shows only safe metadata and advice. It never returns the
+key, raw environment, provider errors, or private filesystem paths. SQL exception
+parameters are hidden. Use `--no-access-log` when running Uvicorn so private search
+queries do not enter access logs. Application code does not log enquiry text.
+
+Local safeguards limit credential checks to 5 per 5 minutes (reset on successful
+login), and Gemini-mode processing to 6 starts per minute with 2 active attempts.
+These shared in-memory budgets apply only to one process, reset on restart, and
+are not distributed production protection. Public submissions still persist and
+return receipts when model processing is locally limited. Read the owner guide
+for scope and recovery steps.
 
 The model receives only the message and approved FAQ entries, under instructions
 treating customer content as untrusted data. It has no tools, secret values,
@@ -248,7 +281,7 @@ correctness; all output still requires human review.
 Tests/CI use temporary databases and mocked providers with no API key. An autouse
 fixture blocks live SDK model methods; a transport test runs the real SDK serializer
 against mock HTTP. Migration tests use populated Phase 1 records/admin/session.
-GitHub Actions runs pytest and Ruff on Ubuntu/Python 3.13.
+GitHub Actions runs pytest, Ruff, and dependency checks on Ubuntu/Python 3.13.
 
 Optional browser check (installed Google Chrome required):
 
@@ -258,7 +291,8 @@ Optional browser check (installed Google Chrome required):
 ```
 
 This retains the demo workflow and adds mocked quota failure, retry, candidate
-review/application, and manual-draft/status preservation. It uses temporary data
+review/application, search/filter/pagination, empty states, clipboard, keyboard
+skip navigation, and manual-draft/status preservation. It uses temporary data
 and random credentials, saves fictional screenshots to ignored `artifacts/`, and
 stops its localhost server afterward. It never calls a real model.
 
@@ -285,7 +319,8 @@ tests, and verification scripts remain separate.
 This is a local single-admin prototype with request-based processing, no worker
 queue. First submission waits up to the processing timeout. Disconnect/restart
 can interrupt processing after saving; an admin must recover it. Claims protect
-one enquiry, not global provider concurrency/quota. No background automatic retry
+one enquiry; the additional local budget bounds process-wide Gemini starts and
+concurrency but does not establish available provider quota. No background automatic retry
 or reprocessing of completed records occurs.
 
 There is no email delivery, password recovery UI, retention tooling, distributed
@@ -293,9 +328,11 @@ rate limiting, multi-user permissions, or deployment setup. Protect the local
 account/disk. Evaluate real-model language understanding and source relevance;
 verify summaries, questions, applicability of approved facts, and every reply.
 
-Phase 3 remains planned: further UI/accessibility polish, security/reliability
-review, quota/rate-limit/retention decisions, CI/documentation refinement, and
-optional deployment preparation. SchoolOS, Vercel, and Neon are not modified.
+Phase 3 completes the agreed local prototype's usability/reliability review,
+regression coverage, and owner documentation. Business knowledge approval and
+ongoing human review remain owner responsibilities. Optional online hosting is a
+separate next step requiring review of the chosen environment; deployment
+readiness is not claimed. SchoolOS, Vercel, Neon, and billing are not modified.
 
 References: [Google quickstart](https://ai.google.dev/gemini-api/docs/quickstart),
 [structured output](https://ai.google.dev/gemini-api/docs/structured-output),

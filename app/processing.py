@@ -11,6 +11,14 @@ from app.models import Enquiry, ProcessingAttempt, Workflow, utcnow
 from app.services import ProcessingFailure
 
 ERRORS = {
+    "local_limit": (
+        "Local processing limit reached (6 starts per minute). Wait at least a minute before "
+        "retrying manually. The enquiry and saved draft are preserved."
+    ),
+    "local_busy": (
+        "Two Gemini attempts are already active in this process. "
+        "Wait for one to finish, then retry."
+    ),
     "missing_key": "Set the server-side GEMINI_API_KEY and restart the app, then retry.",
     "configuration": (
         "Check processor mode, model, timeout (1–60s), and token limit (256–2000); "
@@ -96,7 +104,13 @@ async def process_enquiry(app, enquiry_id: int, *, initial: bool = False) -> boo
     result = None
     sources = []
     cancelled = False
+    admitted = False
     try:
+        if app.state.processing_mode == "gemini":
+            limit_code, _ = app.state.processing_budget.enter()
+            if limit_code:
+                raise ProcessingFailure(limit_code)
+            admitted = True
         result = await asyncio.wait_for(
             app.state.processor.process(message), timeout=app.state.processing_timeout
         )
@@ -110,6 +124,9 @@ async def process_enquiry(app, enquiry_id: int, *, initial: bool = False) -> boo
     except Exception:
         # Never persist/log raw exceptions, provider payloads, keys, or customer data.
         code = "provider"
+    finally:
+        if admitted:
+            app.state.processing_budget.leave()
     with Session(app.state.engine) as db:
         finish = db.exec(
             update(Enquiry)

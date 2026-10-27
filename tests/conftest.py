@@ -29,9 +29,15 @@ def forbid_live_models(monkeypatch):
 
 @pytest.fixture
 def client(tmp_path):
+    faq = tmp_path / "faq.json"
+    faq.write_text("[]", encoding="utf-8")
     app = create_app(
         Settings(
-            database_url=f"sqlite:///{tmp_path / 'test.db'}", processor_mode="demo", _env_file=None
+            database_url=f"sqlite:///{tmp_path / 'test.db'}",
+            processor_mode="demo",
+            gemini_api_key="",
+            faq_path=faq,
+            _env_file=None,
         )
     )
     with TestClient(app) as client:

@@ -3,12 +3,12 @@
 {% block content %}
 <section class="card login-card">
   <p class="eyebrow">Private workspace</p><h1>Welcome back.</h1><p class="muted">Sign in to review enquiries and prepare reply drafts.</p>
-  <form method="post" action="/admin/login">
+  <form method="post" action="/admin/login" data-single-submit>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label for="username">Username</label><input id="username" name="username" autocomplete="username" required maxlength="100">
     <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256">
     {% if error %}<p role="alert" class="error">{{ error }}</p>{% endif %}
     <button class="button primary wide" type="submit">Sign in</button>
-  </form><p class="muted small">Local setup: create your administrator using the CLI command in the README.</p>
+  </form><p class="muted small">This workspace is for the administrator. Repeated failed sign-in attempts are temporarily limited.</p>
 </section>
 {% endblock %}

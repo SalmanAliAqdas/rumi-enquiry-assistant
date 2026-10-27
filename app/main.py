@@ -14,6 +14,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.config import Settings
 from app.db import init_db, make_engine
 from app.gemini import build_processor
+from app.limits import LocalBudget
 from app.private import private_api
 from app.private import router as private_router
 from app.public import router as public_router
@@ -32,8 +33,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         app.state.engine.dispose()
 
-    app = FastAPI(title="Rumi Enquiry Assistant", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="Rumi Enquiry Assistant", version="0.3.0", lifespan=lifespan)
     app.state.settings = settings
+    app.state.login_budget = LocalBudget(limit=5, window=300)
+    app.state.processing_budget = LocalBudget(limit=6, window=60, concurrent=2)
     app.state.processor, app.state.processing_timeout = build_processor(settings)
     app.state.processing_mode = (
         settings.processor_mode if settings.processor_mode in {"demo", "gemini"} else "unconfigured"

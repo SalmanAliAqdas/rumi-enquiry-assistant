@@ -10,7 +10,7 @@ app = ["templates/*.html", "static/*"]
 
 [project]
 name = "rumi-enquiry-assistant"
-version = "0.2.0"
+version = "0.3.0"
 description = "A local enquiry workflow with optional Gemini processing and manual review"
 requires-python = ">=3.11"
 dependencies = [

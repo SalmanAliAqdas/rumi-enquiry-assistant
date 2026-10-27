@@ -23,6 +23,7 @@ class DraftUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     reply_draft: str = Field(min_length=1, max_length=6000)
     workflow_status: Workflow
+    expected_revision: int | None = Field(default=None, ge=0)
 
 
 class EnquiryRead(BaseModel):
@@ -67,3 +68,11 @@ class ApplyCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     candidate_id: str = Field(min_length=32, max_length=32)
     draft_revision: int = Field(ge=0)
+
+
+class ConfigurationStatus(BaseModel):
+    mode: str
+    model: str | None
+    key_configured: bool
+    approved_faq_count: int | None
+    notes: list[str]

@@ -12,12 +12,12 @@
     <p class="muted">Learning prototype. Use fictional details only; please don’t include sensitive information.</p>
   </section>
   <section class="card form-card" aria-labelledby="form-title">
-    <p class="eyebrow">Let’s hear your idea</p><h2 id="form-title">Send an enquiry</h2><p class="muted">All fields are required.</p>
-    <form id="enquiry-form">
+    <p class="eyebrow">Let’s hear your idea</p><h2 id="form-title">Send an enquiry</h2><p id="form-instructions" class="muted">All fields are required.</p>
+    <form id="enquiry-form" aria-describedby="form-feedback">
       <label for="name">Your name</label><input id="name" name="name" autocomplete="name" required maxlength="100" placeholder="e.g. Alex Example">
       <label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="alex@example.com">
       <label for="message">What would you like to build?</label><textarea id="message" name="message" required minlength="20" maxlength="3000" rows="7" aria-describedby="message-help" placeholder="Describe your idea, goals, and the help you need…"></textarea>
-      <div class="field-help"><span id="message-help">20–3000 characters. Outer whitespace is trimmed.</span><span id="character-count">0 / 3000</span></div>
+      <div class="field-help"><span id="message-help">Please share 20–3000 characters.</span><span id="character-count">0 / 3000</span></div>
       <button class="button primary wide" type="submit">Submit enquiry <span aria-hidden="true">↗</span></button>
       <p id="form-feedback" class="feedback" role="status" aria-live="polite"></p>
       <noscript><p>This form requires JavaScript. You can also submit through the API documentation at /docs.</p></noscript>

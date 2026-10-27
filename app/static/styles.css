@@ -660,3 +660,43 @@ footer {
     padding:20px;
   }
 }
+
+/* Phase 3 review and accessibility refinements. */
+.table-scroll { position: relative; max-width: 100%; }
+input::placeholder, textarea::placeholder { color: #63736f; }
+.table-secondary { font-size: 11px; }
+body { overflow-wrap: anywhere; }
+.skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; background: white; padding: 12px; border: 2px solid var(--teal); }
+.skip-link:focus { top: 12px; }
+.skip-link:not(:focus) { clip-path: inset(50%); }
+.configuration-panel { margin: 20px 0; padding: 18px 24px; }
+summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.configuration-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 18px; }
+.configuration-grid dt { margin-top: 0; }
+.setup-note, .knowledge-notice { font-size: 13px; color: #375a60; }
+.knowledge-notice { background: #eff5f1; border-left: 3px solid var(--teal); padding: 12px 18px; }
+.next-step { margin: 22px 0; padding: 16px 20px; background: var(--soft); border-radius: 9px; }
+.next-step p { margin: 5px 0 0; }
+.needs-cell { min-width: 235px; max-width: 320px; white-space: normal; }
+.next-cell { min-width: 190px; max-width: 250px; white-space: normal; }
+.next-cell p, .summary-preview { margin: 8px 0; font-size: 13px; }
+.summary-preview { color: #435c65; }
+.candidate-label { display: block; color: var(--teal); font-size: 12px; margin-top: 8px; white-space: normal; }
+.badge-error { background: #fff0ef; color: #9c2634; border-color: #edc7ca; }
+.draft-state { font-size: 12px; font-weight: 600; color: var(--teal); padding: 8px 12px; background: var(--soft); border-radius: 6px; }
+.customer-name { overflow-wrap: anywhere; }
+.page-heading > div { min-width: 0; }
+.page-heading > form { flex-shrink: 0; }
+.source { border-bottom: 1px solid var(--line); padding: 8px 0; }
+.original-message { overflow-wrap: anywhere; word-break: normal; }
+.field-help { color: #52645e; }
+.page-size { max-width: 100px; }
+input[readonly], select:disabled { background: var(--paper); }
+@media(max-width:700px) {
+  .configuration-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .configuration-panel { padding: 16px; }
+  .customer-name { font-size: 30px; }
+  .page-heading > form .button { padding: 9px 12px; }
+  .actions .button { min-height: 44px; }
+  .field-help { font-size: 11px; flex-wrap: wrap; gap: 3px; }
+}

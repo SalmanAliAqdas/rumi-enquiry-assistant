@@ -17,7 +17,8 @@ from app.auth import (
 from app.db import get_db
 from app.models import Category, Enquiry, WebSession, Workflow, utcnow
 from app.processing import attempts_for, process_enquiry
-from app.schemas import ApplyCandidate, DraftUpdate, EnquiryPage, EnquiryRead
+from app.review import configuration_status, next_action
+from app.schemas import ApplyCandidate, ConfigurationStatus, DraftUpdate, EnquiryPage, EnquiryRead
 
 router = APIRouter()
 private_api = APIRouter(
@@ -31,7 +32,7 @@ class Filters:
         q: str = Query(default="", max_length=100),
         category: Annotated[Category | None, BeforeValidator(lambda v: v or None)] = None,
         status: Annotated[Workflow | None, BeforeValidator(lambda v: v or None)] = None,
-        page: int = Query(default=1, ge=1),
+        page: int = Query(default=1, ge=1, le=1_000_000),
         page_size: int = Query(default=10, ge=1, le=50),
     ):
         self.q = q.strip()
@@ -103,7 +104,22 @@ def login(
     session: WebSession = Depends(current_session),
     db: Session = Depends(get_db),
 ):
-    admin = verify_login(db, username, password)
+    limit_code, wait = request.app.state.login_budget.enter()
+    if limit_code:
+        return request.app.state.templates.TemplateResponse(
+            request,
+            "login.html",
+            {
+                "csrf_token": session.csrf_token,
+                "error": f"Too many sign-in attempts. Wait {wait} seconds before trying again.",
+            },
+            status_code=429,
+            headers={"Retry-After": str(wait)},
+        )
+    try:
+        admin = verify_login(db, username, password)
+    finally:
+        request.app.state.login_budget.leave()
     if not admin:
         return request.app.state.templates.TemplateResponse(
             request,
@@ -112,6 +128,7 @@ def login(
             status_code=401,
         )
     response = RedirectResponse("/admin", status_code=303)
+    request.app.state.login_budget.reset()
     issue_session(request, response, db, admin.id)
     return response
 
@@ -139,6 +156,8 @@ def dashboard(
         {
             "csrf_token": session.csrf_token,
             "results": results,
+            "configuration": configuration_status(request.app),
+            "next_action": next_action,
             "filters": filters,
             "categories": list(Category),
             "statuses": list(Workflow),
@@ -161,6 +180,8 @@ def details(
         {
             "csrf_token": session.csrf_token,
             "enquiry": get_enquiry(enquiry_id, db),
+            "configuration": configuration_status(request.app),
+            "next_action": next_action,
             "statuses": list(Workflow),
             "attempts": attempts_for(db, enquiry_id),
         },
@@ -186,18 +207,31 @@ def edit_api(enquiry_id: int, data: DraftUpdate, db: Session = Depends(get_db)):
     if not data.reply_draft.strip():
         raise HTTPException(422, "Reply draft cannot be blank.")
     get_enquiry(enquiry_id, db)
-    db.exec(
-        update(Enquiry)
-        .where(Enquiry.id == enquiry_id)
-        .values(
+    query = update(Enquiry).where(Enquiry.id == enquiry_id)
+    if data.expected_revision is not None:
+        query = query.where(Enquiry.draft_revision == data.expected_revision)
+    result = db.exec(
+        query.values(
             reply_draft=data.reply_draft,
             workflow_status=data.workflow_status,
             draft_revision=Enquiry.draft_revision + 1,
             updated_at=utcnow(),
         )
     )
+    if result.rowcount != 1:
+        db.rollback()
+        raise HTTPException(
+            409,
+            "The saved draft changed in another view. Copy your edits before reloading "
+            "and reviewing the latest draft.",
+        )
     db.commit()
     return get_enquiry(enquiry_id, db)
+
+
+@private_api.get("/status", response_model=ConfigurationStatus)
+def private_status(request: Request):
+    return configuration_status(request.app)
 
 
 @private_api.post(

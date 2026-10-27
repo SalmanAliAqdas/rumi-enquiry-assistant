@@ -1,0 +1,16 @@
+{% if configuration is defined %}
+<details class="card configuration-panel">
+  <summary>Processing setup · {{ configuration.mode }} · {{ configuration.approved_faq_count if configuration.approved_faq_count is not none else 'Unknown' }} approved FAQs</summary>
+  <dl class="configuration-grid">
+    <div><dt>Mode</dt><dd>{{ configuration.mode }}</dd></div>
+    <div><dt>Configured model</dt><dd>{{ configuration.model or 'Not configured / invalid' }}</dd></div>
+    <div><dt>Key configured</dt><dd>{{ 'Yes' if configuration.key_configured else 'No' }}</dd></div>
+    <div><dt>Approved FAQ count</dt><dd>{{ configuration.approved_faq_count if configuration.approved_faq_count is not none else 'Unavailable' }}</dd></div>
+  </dl>
+  {% for note in configuration.notes %}<p class="setup-note">{{ note }}</p>{% endfor %}
+  <p class="small muted">See docs/OWNER_GUIDE.md for knowledge approval and troubleshooting. Configuration is private; all replies need human review.</p>
+</details>
+{% if configuration.approved_faq_count == 0 %}
+<p class="knowledge-notice">No approved FAQs yet. Enquiries can be analyzed, but business questions need human review. Add verified facts before expecting business answers.</p>
+{% endif %}
+{% endif %}
