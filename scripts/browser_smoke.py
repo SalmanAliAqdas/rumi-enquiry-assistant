@@ -4,6 +4,7 @@ Uses an isolated temporary SQLite database, fictional data, and a random passwor
 Requires the browser extra and an installed Google Chrome browser.
 """
 
+import re
 import secrets
 import socket
 import tempfile
@@ -140,6 +141,29 @@ def main():
                 page.locator(".configuration-panel summary").click()
                 expect(page.locator(".configuration-panel")).to_contain_text("Key configured")
                 expect(page.locator(".configuration-panel")).to_contain_text("No")
+                page.get_by_role("link", name="New test enquiry", exact=True).click()
+                expect(page.get_by_role("heading", name="New test enquiry")).to_be_visible()
+                page.screenshot(path=str(screenshots / "new-test-desktop.png"), full_page=True)
+                page.set_viewport_size({"width": 390, "height": 844})
+                page.get_by_label("Fictional name", exact=True).fill("Fictional Private Test")
+                page.get_by_label("Fictional email", exact=True).fill("private-test@example.com")
+                page.get_by_label("Fictional message", exact=True).fill(
+                    "A fictional website enquiry created from the private dashboard."
+                )
+                page.screenshot(path=str(screenshots / "new-test-mobile.png"), full_page=True)
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.get_by_role("button", name="Save and process test enquiry").click()
+                page.wait_for_url(re.compile(r"/admin/enquiries/\d+$"))
+                expect(page.get_by_role("heading", name="Fictional Private Test")).to_be_visible()
+                expect(page.get_by_text("Fictional test enquiry", exact=True)).to_be_visible()
+                expect(page.get_by_label("Reply draft", exact=True)).not_to_have_value("")
+                page.get_by_label("Reply draft", exact=True).fill("Reviewed fictional test draft.")
+                page.get_by_label("Workflow status").select_option("Reviewed")
+                page.get_by_role("button", name="Save changes").click()
+                expect(page.locator("#draft-feedback")).to_contain_text("Changes saved")
+                page.get_by_role("link", name="Back to inbox", exact=False).click()
+                expect(page.get_by_text("Fictional test enquiry", exact=True)).to_be_visible()
+                page.set_viewport_size({"width": 1440, "height": 1050})
                 # Seed only isolated demo records so paging is exercised without
                 # spending provider quota or touching normal application data.
                 for index in range(6):

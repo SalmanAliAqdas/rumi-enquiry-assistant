@@ -72,7 +72,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if request.method == "POST":
                 if request.url.path == "/admin/login":
                     scopes.append(("login", 5, 300))
-                elif request.url.path in {"/api/enquiries", "/explore/live"}:
+                elif request.url.path in {
+                    "/api/enquiries",
+                    "/api/admin/enquiries",
+                    "/explore/live",
+                }:
                     scopes.append(("submission", 20, 3600))
             for scope, limit, window in scopes:
                 code, _ = await run_in_threadpool(

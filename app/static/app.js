@@ -35,6 +35,8 @@ function busy(form, value) {
 const enquiryForm = document.querySelector("#enquiry-form");
 if (enquiryForm) {
   const submissionKey = crypto.randomUUID();
+  const submitURL = enquiryForm.dataset.submitUrl || "/api/enquiries";
+  const openSavedEnquiry = enquiryForm.dataset.openSavedEnquiry === "true";
   let pending = false;
   const message = document.querySelector("#message");
   message.addEventListener("input", () => {
@@ -47,12 +49,18 @@ if (enquiryForm) {
     const button = enquiryForm.querySelector('button[type="submit"]');
     const feedback = document.querySelector("#form-feedback");
     busy(enquiryForm, true);
-    button.textContent = "Saving your enquiry…";
-    feedback.textContent = "Please wait for your receipt. You can retry safely if the connection fails.";
+    button.textContent = openSavedEnquiry ? "Saving and processing test…" : "Saving your enquiry…";
+    feedback.textContent = openSavedEnquiry
+      ? "Your saved test enquiry will open for review. You can retry safely if the connection fails."
+      : "Please wait for your receipt. You can retry safely if the connection fails.";
     feedback.classList.remove("error");
     try {
       const fields = Object.fromEntries(new FormData(enquiryForm));
-      const data = await sendJSON("/api/enquiries", "POST", {...fields, submission_key: submissionKey});
+      const data = await sendJSON(submitURL, "POST", {...fields, submission_key: submissionKey});
+      if (openSavedEnquiry) {
+        window.location.assign(`/admin/enquiries/${data.id}`);
+        return;
+      }
       document.querySelector("#receipt-reference").textContent = data.reference;
       enquiryForm.hidden = true;
       document.querySelector("#form-title").hidden = true;
@@ -65,7 +73,7 @@ if (enquiryForm) {
       feedback.classList.add("error");
       pending = false;
       busy(enquiryForm, false);
-      button.textContent = "Submit enquiry ↗";
+      button.textContent = openSavedEnquiry ? "Save and process test enquiry" : "Submit enquiry ↗";
     }
   });
 }

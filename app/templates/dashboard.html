@@ -5,6 +5,7 @@
   <div><p class="eyebrow">Private workspace</p><h1>Enquiry inbox</h1><p class="muted">Understand the request. Review the draft. Choose the next step.</p></div>
   {% include "logout.html" %}
 </div>
+<p><a class="button primary" href="/admin/enquiries/new">New test enquiry</a> <span class="muted">Fictional testing · saved to your private inbox</span></p>
 <p class="demo-banner">{{ processing_label }} Completed processing does not mean a reply is approved or sent.</p>
 {% include "configuration.html" %}
 <div class="counts" aria-label="Workflow counts across all enquiries">
@@ -26,7 +27,7 @@
       <tbody>
       {% for enquiry in results.items %}
       <tr>
-        <td class="needs-cell"><strong>{{ enquiry.name }}</strong><span class="table-secondary">{{ enquiry.reference }}</span><p class="summary-preview">{{ enquiry.summary or 'No summary yet. Open the original enquiry for review.' }}</p><span class="small muted">{{ enquiry.category.value }}</span></td>
+        <td class="needs-cell"><strong>{{ enquiry.name }}</strong><span class="table-secondary">{{ enquiry.reference }}</span>{% if enquiry.reference.startswith('REA-TEST-') %}<span class="badge">Fictional test enquiry</span>{% endif %}<p class="summary-preview">{{ enquiry.summary or 'No summary yet. Open the original enquiry for review.' }}</p><span class="small muted">{{ enquiry.category.value }}</span></td>
         <td><span class="badge">{{ enquiry.workflow_status.value }}</span></td>
         <td><span class="badge {{ 'badge-error' if enquiry.processing_status == 'Failed' else '' }}">{{ enquiry.processing_status }}</span><span class="table-secondary">{{ enquiry.processing_mode }}</span>{% if enquiry.candidate %}<strong class="candidate-label">Candidate awaiting review</strong>{% endif %}</td>
         <td>{{ enquiry.created_at.strftime('%d %b %Y · %H:%M') }}</td>

@@ -18,7 +18,15 @@ from app.db import get_db
 from app.models import Category, Enquiry, WebSession, Workflow, utcnow
 from app.processing import attempts_for, process_enquiry
 from app.review import configuration_status, next_action
-from app.schemas import ApplyCandidate, ConfigurationStatus, DraftUpdate, EnquiryPage, EnquiryRead
+from app.schemas import (
+    ApplyCandidate,
+    ConfigurationStatus,
+    DraftUpdate,
+    EnquiryPage,
+    EnquiryRead,
+    Submission,
+)
+from app.submissions import save_submission
 
 router = APIRouter()
 private_api = APIRouter(
@@ -165,6 +173,26 @@ def dashboard(
             "next_url": request.url.include_query_params(page=filters.page + 1),
         },
     )
+
+
+@router.get("/admin/enquiries/new", include_in_schema=False)
+def new_test_enquiry(request: Request, session: WebSession = Depends(require_admin)):
+    return request.app.state.templates.TemplateResponse(
+        request, "new_test_enquiry.html", {"csrf_token": session.csrf_token}
+    )
+
+
+@private_api.post(
+    "/enquiries",
+    response_model=EnquiryRead,
+    status_code=201,
+    dependencies=[Depends(csrf_protect)],
+)
+async def submit_test_enquiry(data: Submission, request: Request, db: Session = Depends(get_db)):
+    saved = save_submission(db, data, request.app.state.processing_mode, fictional_test=True)
+    if saved.created:
+        await process_enquiry(request.app, saved.id, initial=True)
+    return get_enquiry(saved.id, db)
 
 
 @router.get("/admin/enquiries/{enquiry_id}", include_in_schema=False)

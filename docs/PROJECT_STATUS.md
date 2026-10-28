@@ -2,7 +2,49 @@
 
 Updated: 2026-10-28 (Asia/Karachi).
 
-## Standalone portfolio preparation
+## Private fictional test enquiries
+
+Owner reports that the Vercel/Neon deployment and administrator login work, and
+Gemini settings are configured in Vercel. Those are owner-reported facts; this
+change does not repeat live provider calls or independently verify cloud hosting.
+
+- The private dashboard now offers **New test enquiry**, opening an authenticated
+  fictional-name/email/message form. Its CSRF-protected private API reuses the
+  existing `Submission` validation, shared duplicate/save-first storage, processing
+  pipeline, and private inbox. After processing, the browser opens the saved detail
+  page for review/editing, including when processing fails.
+- New private test records use `REA-TEST-` references and visible fictional labels
+  in the inbox/detail. Existing records are not rewritten. No schema migration,
+  administrator reset, environment change, or email sending is introduced.
+- Portfolio mode and public Explore Demo stay in place. Anonymous enquiry creation
+  remains blocked in portfolio mode. Private submissions consume the existing
+  shared submission allowance and the same local/global Gemini budgets; public
+  live-demo enablement does not control this authenticated testing path.
+- Duplicate retries return the saved record without another model call. Changed
+  input with a reused submission token is rejected. Provider/guard failures leave
+  a saved failed enquiry for explicit retry, with no fallback. Existing manual
+  draft/status preservation, candidate application, revision checks, and unsaved
+  draft guards are reused.
+
+Verified: full pytest with isolated SQLite and localhost PostgreSQL 17.11 databases
+over TLS, **189 passed, 1 skipped**. The skip is the PostgreSQL-only schema check's
+SQLite parameter. The new checks cover authentication/CSRF, validation, save-first
+processing without an open row transaction, duplicate/conflict handling, private
+portfolio submission/editing, provider/guard failures, and shared request limits.
+The SQLite-only run separately passed **119 tests, 1 skipped**. Ruff lint/format,
+dependency check, and `git diff --check` passed.
+
+The updated Chrome smoke passed private dashboard → fictional form → saved review
+→ edit/save, plus the existing public/retry/candidate/unsaved-guard workflow. The
+Explore Demo browser smoke also passed. Desktop/mobile private-form screenshots
+were inspected and remain ignored under `artifacts/`. No browser JavaScript errors
+or tested mobile overflow. Providers were mocked/blocked; no live Gemini calls.
+
+Existing local `.env`, private FAQ, administrator/enquiry/session rows, and SQLite
+schema fingerprints are preserved. Tests use isolated databases and mocked/blocked
+providers. SchoolOS is untouched; no direct Vercel/Neon configuration changes.
+
+## Standalone portfolio preparation (historical)
 
 The separate noncommercial Vercel Hobby / Neon Free portfolio is implemented and
 locally verified. It has not been provisioned, built on Vercel, or deployed.

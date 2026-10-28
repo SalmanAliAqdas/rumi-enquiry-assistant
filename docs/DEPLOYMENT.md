@@ -155,7 +155,12 @@ to point at the portfolio DB merely to perform cloud initialization.
    retrieves demo runs or real enquiries by ID/reference. Simulation/live forms
    reject missing or invalid CSRF tokens. Saved examples come exclusively from JSON.
 4. Log in with the newly created cloud administrator. Confirm the private inbox is
-   empty and the fictional FAQ projection is approved. Visit Explore Demo and confirm
+   empty on a fresh database and the fictional FAQ projection is approved. The private
+   **New test enquiry** form can then save fictional name/email/message records,
+   process them in the configured mode, and open their review page. Existing request
+   and Gemini budgets apply; `PUBLIC_DEMO_LIVE` controls the public demo only. These
+   `REA-TEST-` records remain private. No schema or environment changes are needed
+   for this feature. Visit Explore Demo and confirm
    it does not log the administrator out. Log out and confirm private API rejection.
 5. Check Neon `rumi_schema` is version 1 and the administrator exists using the
    console without exporting it. Confirm there are no copied local enquiries.

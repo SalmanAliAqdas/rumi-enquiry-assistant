@@ -27,10 +27,25 @@ are sent to Gemini. Their text snapshots are stored with generated results for r
 
 ## Test a question against your facts
 
-With Gemini intentionally configured, submit one fictional enquiry that asks a
-question answered by a newly approved entry. Use `example.com` contact details,
-not a customer's identity. Open the receipt's corresponding enquiry in the
-private inbox. Check the category, summary, questions, source IDs, and saved draft.
+Sign in and choose **New test enquiry** on the private dashboard. Enter an invented
+name, an `example.com` email, and a fictional message, then choose **Save and process
+test enquiry**. The saved enquiry opens directly for review and editing, including
+if processing fails. Test records have `REA-TEST-` references and a visible fictional
+label in the inbox and detail page. No email is sent.
+
+This authenticated, CSRF-protected flow is available in portfolio mode while the
+public submission API stays disabled. It uses the configured processor mode and
+the same shared request allowance and local/global Gemini budgets as other model
+paths. `PUBLIC_DEMO_LIVE` controls Explore Demo only; it does not disable private
+testing. Retry an interrupted form submission without changing its fields to
+retrieve the existing record without creating another record or model request.
+After a saved processing failure, use the existing manual **Retry processing**
+action to generate a candidate. No automatic fallback occurs.
+
+With Gemini intentionally configured, ask a fictional question answered by a newly
+approved entry. In portfolio mode, only the packaged fictional knowledge is used;
+the ignored local private FAQ stays local. Check the category, summary, questions,
+source IDs, and saved draft.
 The factual draft text should match applicable approved answers. Also try a
 fictional question you have not answered: it should ask for clarification or
 human handoff rather than inventing business details.

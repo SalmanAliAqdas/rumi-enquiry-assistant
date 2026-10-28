@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}New test enquiry · Rumi Enquiry Assistant{% endblock %}
+{% block content %}
+<div class="public-layout">
+  <section class="intro">
+    <p class="eyebrow">Private workspace · Fictional testing only</p>
+    <h1>New test enquiry</h1>
+    <p class="lead">Try a fictional request and review the resulting draft in your private inbox.</p>
+    <p>The enquiry is saved before processing. After submission, its saved detail page opens so you can review and edit the draft, or inspect a processing failure and retry manually.</p>
+    <p class="demo-label">{{ processing_label }}</p>
+    {% if request.app.state.processing_mode == 'gemini' %}<p>Only the fictional message and approved FAQ knowledge are sent to Gemini. The name and email are not sent. Existing shared usage limits apply.</p>{% endif %}
+    <p>Use invented names, an example.com email, and a fictional message. Do not enter real customer or sensitive information. No email is sent.</p>
+    <a class="button secondary" href="/admin">Back to inbox</a>
+  </section>
+  <section class="card form-card" aria-labelledby="form-title">
+    <h2 id="form-title">Fictional enquiry details</h2>
+    <p class="muted">All fields are required. This creates a saved fictional test record.</p>
+    <form id="enquiry-form" action="/api/admin/enquiries" method="post" data-submit-url="/api/admin/enquiries" data-open-saved-enquiry="true" aria-describedby="form-feedback">
+      <label for="name">Fictional name</label><input id="name" name="name" required maxlength="100" autocomplete="off" placeholder="Alex Example">
+      <label for="email">Fictional email</label><input id="email" name="email" type="email" required maxlength="254" autocomplete="off" placeholder="alex@example.com">
+      <label for="message">Fictional message</label><textarea id="message" name="message" required minlength="20" maxlength="3000" rows="7" aria-describedby="message-help" placeholder="Our fictional bookshop needs a website to list reading events and a catalogue."></textarea>
+      <div class="field-help"><span id="message-help">Please share 20–3000 characters.</span><span id="character-count">0 / 3000</span></div>
+      <button class="button primary wide" type="submit">Save and process test enquiry</button>
+      <p id="form-feedback" class="feedback" role="status" aria-live="polite"></p>
+      <noscript><p>JavaScript is required to submit this private form and safely retry an interrupted request.</p></noscript>
+    </form>
+  </section>
+</div>
+{% endblock %}

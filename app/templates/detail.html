@@ -6,6 +6,7 @@
   <div><p class="eyebrow">Enquiry review</p><h1 class="customer-name">{{ enquiry.name }}</h1><p class="reference small">{{ enquiry.reference }}</p></div>
   {% include "logout.html" %}
 </div>
+{% if enquiry.reference.startswith('REA-TEST-') %}<p class="demo-banner"><strong>Fictional test enquiry</strong> · Created in the private workspace for testing. No email is sent.</p>{% endif %}
 <p class="demo-banner">
   {% if enquiry.processing_mode == 'demo' %}{{ demo_label }}{% elif enquiry.processing_mode == 'gemini' %}Gemini processing — manual review required.{% else %}Processing configuration needs administrator attention.{% endif %}
   <strong>Processing: {{ enquiry.processing_status }}</strong> · Workflow: <span id="saved-workflow">{{ enquiry.workflow_status.value }}</span>.
