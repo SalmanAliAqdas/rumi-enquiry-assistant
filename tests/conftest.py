@@ -1,5 +1,7 @@
+import os
 import re
 import secrets
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +11,32 @@ from app.auth import password_hasher
 from app.config import Settings
 from app.main import create_app
 from app.models import Admin
+
+
+@pytest.fixture(params=["sqlite"] + (["postgresql"] if os.getenv("TEST_POSTGRES_URL") else []))
+def database_url(request, tmp_path):
+    if request.param == "sqlite":
+        yield f"sqlite:///{tmp_path / 'test.db'}"
+        return
+    import psycopg
+    from psycopg import sql
+    from sqlalchemy.engine import make_url
+
+    target = make_url(os.environ["TEST_POSTGRES_URL"])
+    if target.host not in {"localhost", "127.0.0.1", "::1"} or target.database != "rumi_test":
+        pytest.fail("PostgreSQL tests require a localhost database named rumi_test")
+    name = "rumi_test_" + uuid4().hex
+    admin_url = target.set(drivername="postgresql").render_as_string(hide_password=False)
+    with psycopg.connect(admin_url, autocommit=True) as connection:
+        connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    url = target.set(database=name).render_as_string(hide_password=False)
+    try:
+        yield url
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
+            )
 
 
 def csrf_from_html(html):
@@ -28,12 +56,16 @@ def forbid_live_models(monkeypatch):
 
 
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, database_url):
     faq = tmp_path / "faq.json"
     faq.write_text("[]", encoding="utf-8")
+    if database_url.startswith("postgresql"):
+        from app.migrations import migrate_database
+
+        migrate_database(database_url)
     app = create_app(
         Settings(
-            database_url=f"sqlite:///{tmp_path / 'test.db'}",
+            database_url=database_url,
             processor_mode="demo",
             gemini_api_key="",
             faq_path=faq,

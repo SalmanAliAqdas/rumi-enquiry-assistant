@@ -112,8 +112,9 @@ The explicit developer live-smoke command is separate from the application budge
 
 Stop the app before making operational changes. The existing `python -m app.cli
 migrate-db` command creates an integrity-checked backup under ignored `backups/`
-and ensures schema version 2. Running it on the current schema is safe and makes
-a fresh backup. No Phase 3 column migration is needed.
+and ensures SQLite schema version 3. Running it on the current schema is safe and makes
+a fresh backup. The portfolio preparation requires this additive v3 migration
+before an existing installation can run the updated source.
 
 Preserve `.env` and the private FAQ separately in protected local storage; they
 are not included in SQLite backups. SQLite backups include enquiries, sessions,
@@ -129,9 +130,10 @@ retention, and secure-disposal practices.
 
 ## Optional future hosting
 
-The agreed local prototype is complete. Hosting remains optional and is not
-configured or verified. Choose a hosting environment before reviewing persistent
-storage, SQLite suitability, HTTPS/Secure cookies, secret management, proxy/host
-trust, distributed limits, backups, monitoring, and data/privacy requirements.
-No deployment readiness is claimed and no Vercel/Neon/billing changes are required
-for local use.
+The local prototype remains usable with SQLite after its explicit migration.
+A separate fictional, noncommercial Vercel Hobby / Neon Free portfolio is now
+prepared with PostgreSQL, shared limits, secure settings, and public sample-only
+exploration. Follow [DEPLOYMENT.md](DEPLOYMENT.md) for setup and verification.
+Cloud resources and deployment have not been created or tested by preparation.
+No Vercel/Neon/billing changes are required for local use. Keep the existing local
+records, administrator, `.env`, and private FAQ off the portfolio.

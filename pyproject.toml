@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 include = ["app*"]
 
 [tool.setuptools.package-data]
-app = ["templates/*.html", "static/*"]
+app = ["templates/*.html", "static/*", "demo_data/*.json"]
 
 [project]
 name = "rumi-enquiry-assistant"
@@ -18,11 +18,15 @@ dependencies = [
   "pydantic-settings>=2.8,<3", "email-validator>=2.2,<3", "jinja2>=3.1.6,<4",
   "python-multipart>=0.0.20,<1", "pwdlib[argon2]>=0.2,<1",
   "google-genai>=2.33,<3",
+  "psycopg[binary]>=3.2,<4",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "httpx2>=2.16,<3", "ruff>=0.11,<1"]
 browser = ["playwright>=1.50,<2"]
+
+[tool.vercel]
+entrypoint = "app.main:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,7 +2,77 @@
 
 Updated: 2026-10-28 (Asia/Karachi).
 
-## Phase 3 completion
+## Standalone portfolio preparation
+
+The separate noncommercial Vercel Hobby / Neon Free portfolio is implemented and
+locally verified. It has not been provisioned, built on Vercel, or deployed.
+Follow [DEPLOYMENT.md](DEPLOYMENT.md) for exact setup and verification commands.
+
+- PostgreSQL uses psycopg 3 alongside the existing SQLite default. The PostgreSQL
+  engine uses NullPool, bounded connections and transaction-local timeouts; it
+  never falls back to SQLite. Cloud startup checks the schema and performs no DDL.
+- PostgreSQL revision 1 initializes only a fresh empty database via the CLI, with
+  transactional DDL, a migration lock, and durable shared-budget rows. Repeated
+  initialization preserves data and counters. SQLite revision 3 is an explicit,
+  integrity-backed additive migration; existing local data was not migrated here.
+- The private CLI prompts without echo for the cloud connection URL, ignores the
+  local `.env` in that mode, hashes a new administrator password, and refuses
+  administrator replacement and password-echo fallback. No bootstrap HTTP route.
+- Vercel configuration selects FastAPI, `app.main:app`, Python 3.13, packaged
+  templates/assets/fictional JSON, function duration, and private-file exclusions.
+  Portfolio configuration requires PostgreSQL TLS, secure cookies, explicit hosts,
+  and shared limits. It forces fictional knowledge and disables arbitrary enquiry
+  submissions; the existing local form remains available outside portfolio mode.
+- Explore Demo uses hand-authored saved fictional fixtures and clearly identified
+  deterministic simulation. Optional live generation accepts only fixed fictional
+  samples, saves attempts in a separate table, and cannot retrieve private inbox
+  records. CSRF protects form mutations. Existing administrator sessions survive
+  visits to Explore Demo. No drafts or messages are sent automatically.
+- Shared database request limits cover all instances, independently of forwarded
+  IPs and anonymous sessions. Gemini has a persistent UTC-day allowance, a lifetime
+  count, and an expiring global lease. Usage is reserved before a call; failures
+  consume usage. Guard outages deny admission. Local budgets, manual retry/candidate
+  handling, draft revisions, and unsaved-edit guards remain in place. Live public
+  generation defaults off; no paid fallback or billing change is implemented.
+
+Verified during this preparation:
+
+- `python -m pytest -q --basetemp=artifacts/pytest-final`, with a localhost
+  `TEST_POSTGRES_URL` requiring TLS: **161 passed, 1 skipped**. The one skip is the
+  PostgreSQL-specific schema/driver test's SQLite parameter. All PostgreSQL cases
+  ran against isolated databases on portable PostgreSQL **17.11**, psycopg **3.3.6**.
+  Tests covered both backends' workflow/authentication/revision/candidate behavior,
+  shared admission races across engines, restart persistence, global lease/caps,
+  explicit migrations, CLI administrator creation, and fictional-data isolation.
+- A focused TLS portfolio smoke passed actual PostgreSQL TLS, hidden-URL migration
+  and administrator CLI, HTTPS cookies, private login, simulation, and an explicitly
+  mocked live demo path with its persistent global cap. No real Gemini call occurred.
+- `ruff check .`, `ruff format --check .`, `python -m pip check`, and
+  `git diff --check` passed. The original browser workflow and new Explore browser
+  check passed; desktop/mobile Explore screenshots were inspected and remain under
+  ignored `artifacts/`. No JavaScript errors or tested mobile horizontal overflow.
+- A final wheel built and installed into a separate ignored environment with the
+  pinned dependencies. An isolated installed-package smoke confirmed templates,
+  CSS/JS, fictional data, simulation, private API protection, and psycopg import;
+  its dependency check passed. This is a Python packaging check, not a Vercel build.
+- Private `.env`/FAQ files and existing administrator/enquiry/session rows and
+  SQLite schema fingerprints remained intact during verification. No local data,
+  passwords, or knowledge were uploaded. Existing local SQLite remains version 2;
+  stop the app and run its documented backed-up v3 migration when adopting this
+  source. Unrelated `.vscode/` changes remain outside the commits.
+
+Remaining setup: create a fresh separate Rumi Neon project/database in the existing
+account; initialize it and create its unique administrator privately; import this
+repository into a new Rumi Vercel project with the documented variables; then
+perform the hosting review, deployment, and live verification. SchoolOS and all
+existing Neon/Vercel resources are unchanged. No Neon/PgBouncer connection, Vercel
+build, cloud cold-start, or live-host checks have run. No new live Gemini requests.
+
+Git delivery will be recorded after the preparation commit is pushed and its
+remote SHA is verified. CI now includes a disposable PostgreSQL service; its
+remote outcome is separate from the completed local verification above.
+
+## Phase 3 completion (historical)
 
 The agreed small local prototype is implemented across Phases 1–3. Owner approval
 of real business knowledge and ongoing manual review remain operational tasks,

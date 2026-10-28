@@ -8,6 +8,10 @@
   --soft:#edf4f0;
   --error:#a52d35;
 }
+.demo-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:24px; }
+.demo-grid form { margin-top:20px; }
+.demo-grid details { margin:20px 0; }
+.demo-draft { white-space:pre-wrap; overflow-wrap:anywhere; }
 .candidate-card, .processing-error {
   margin-top: 24px;
   overflow-wrap: anywhere;

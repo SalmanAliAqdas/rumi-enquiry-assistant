@@ -67,7 +67,7 @@ def test_populated_phase_one_migration_preserves_every_existing_value(tmp_path, 
         }
     with sqlite3.connect(target) as db:
         assert db.execute("SELECT * FROM enquiry").fetchone()[: len(before)] == before
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert db.execute("PRAGMA user_version").fetchone()[0] == 3
     engine = make_engine(url)
     try:
         init_db(engine)

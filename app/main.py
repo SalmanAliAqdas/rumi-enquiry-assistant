@@ -8,17 +8,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import Settings
 from app.db import init_db, make_engine
+from app.explore import router as explore_router
 from app.gemini import build_processor
 from app.limits import LocalBudget
 from app.private import private_api
 from app.private import router as private_router
 from app.public import router as public_router
 from app.services import DEMO_LABEL
+from app.shared_limits import SharedLimits
 
 ROOT = Path(__file__).parent
 
@@ -29,9 +32,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.engine = make_engine(settings.database_url)
-        init_db(app.state.engine)
-        yield
-        app.state.engine.dispose()
+        try:
+            init_db(app.state.engine)
+            app.state.shared_limits = SharedLimits(app.state.engine)
+            yield
+        finally:
+            app.state.engine.dispose()
 
     app = FastAPI(title="Rumi Enquiry Assistant", version="0.3.0", lifespan=lifespan)
     app.state.settings = settings
@@ -58,12 +64,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.processor_mode == "gemini"
         else "Processing configuration needs administrator attention."
     )
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
-    )
 
     @app.middleware("http")
     async def protect_responses(request: Request, call_next):
+        if settings.shared_limits and not request.url.path.startswith("/static/"):
+            scopes = [("requests", 120, 60)]
+            if request.method == "POST":
+                if request.url.path == "/admin/login":
+                    scopes.append(("login", 5, 300))
+                elif request.url.path in {"/api/enquiries", "/explore/live"}:
+                    scopes.append(("submission", 20, 3600))
+            for scope, limit, window in scopes:
+                code, _ = await run_in_threadpool(
+                    app.state.shared_limits.take, scope, limit, window
+                )
+                if code:
+                    return JSONResponse(
+                        {"detail": "Shared request limit or service unavailable. Try later."},
+                        status_code=503 if code == "shared_unavailable" else 429,
+                        headers={"Retry-After": str(window), "Cache-Control": "no-store"},
+                    )
         if request.method in {"POST", "PATCH", "PUT"}:
             body = bytearray()
             async for chunk in request.stream():
@@ -98,8 +118,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
     app.include_router(public_router)
+    app.include_router(explore_router)
     app.include_router(private_router)
     app.include_router(private_api)
+    # Outermost middleware rejects unknown hosts before database work.
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
     return app
 
 

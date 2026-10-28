@@ -12,9 +12,9 @@
   <a href="#main-content" class="skip-link">Skip to content</a>
   <header class="site-header">
     <a href="/" class="brand"><span class="brand-mark" aria-hidden="true">R</span><span>Rumi <strong>Enquiry Assistant</strong></span></a>
-    <nav aria-label="Main navigation"><a href="/">Submit an enquiry</a><a href="/admin">Private dashboard</a></nav>
+    <nav aria-label="Main navigation">{% if not request.app.state.settings.portfolio_mode %}<a href="/">Submit an enquiry</a>{% endif %}<a href="/explore">Explore Demo</a><a href="/admin">Private dashboard</a></nav>
   </header>
   <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
-  <footer><span>Rumi Enquiry Assistant · Local learning prototype</span><span>{{ processing_label }}</span></footer>
+  <footer><span>Rumi Enquiry Assistant · {% if request.app.state.settings.portfolio_mode %}Noncommercial fictional portfolio{% else %}Local learning prototype{% endif %}</span><span>{{ processing_label }}</span></footer>
 </body>
 </html>

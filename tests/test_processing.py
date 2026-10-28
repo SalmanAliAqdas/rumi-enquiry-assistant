@@ -154,7 +154,10 @@ def test_duplicate_submission_during_processing_and_no_open_transaction(client):
             # A different connection can acquire a write transaction while the
             # provider is in flight, and sees the committed original enquiry.
             with client.app.state.engine.connect() as connection:
-                connection.exec_driver_sql("BEGIN IMMEDIATE")
+                if connection.dialect.name == "sqlite":
+                    connection.exec_driver_sql("BEGIN IMMEDIATE")
+                else:
+                    connection.exec_driver_sql("SELECT id FROM enquiry FOR UPDATE NOWAIT")
                 assert connection.exec_driver_sql("SELECT COUNT(*) FROM enquiry").scalar_one() == 1
                 connection.rollback()
             duplicate = client.post("/api/enquiries", json=data)

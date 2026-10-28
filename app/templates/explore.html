@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Explore Demo · Rumi Enquiry Assistant{% endblock %}
+{% block content %}
+<section class="intro">
+  <p class="eyebrow">Noncommercial portfolio · Fictional data only</p>
+  <h1>Explore the enquiry workflow.</h1>
+  <p class="lead">Follow an idea from enquiry to classification, clarification, and a draft for human review. No reply is sent automatically.</p>
+  <p>Saved examples below are hand-authored fictional fixtures shipped with the app. Simulated results use local rules. Live-generated results use Gemini only when explicitly enabled, within shared daily and total limits.</p>
+  <p class="demo-label">{% if live_enabled %}Live generation available for these fixed fictional messages only.{% else %}Live generation is disabled. Saved examples and simulation need no API key.{% endif %}</p>
+  <ol><li>Save the enquiry before processing.</li><li>Classify and summarize the request.</li><li>Ask for missing details and prepare a draft.</li><li>A private administrator reviews, edits, and explicitly applies retry candidates.</li></ol>
+</section>
+{% if error %}<div class="card processing-error" role="alert"><h2>Live generation failed</h2><p>{{ error }}</p><p>The fictional attempt was saved. No simulated result was substituted. Return to Explore Demo to retry manually.</p></div>{% endif %}
+{% if result %}<section class="card candidate-card" aria-labelledby="result-title">
+  <p class="eyebrow">{{ kind }}</p><h2 id="result-title">{{ sample.title }}</h2>
+  <p>{{ sample.message }}</p><p><strong>Category:</strong> {{ result.category }}</p><p><strong>Summary:</strong> {{ result.summary }}</p>
+  <h3>Draft · manual review required</h3><p class="demo-draft">{{ result.reply_draft }}</p>
+  {% for question in result.clarification_questions %}<p>{{ question }}</p>{% endfor %}
+  {% if result.review_reason %}<p><strong>Human review:</strong> {{ result.review_reason }}</p>{% endif %}
+  <p><strong>Workflow:</strong> Awaiting human review. No message sent.</p><a class="button secondary" href="/explore">Explore another sample</a>
+</section>{% endif %}
+<div class="demo-grid">
+{% for item in samples %}<article class="card candidate-card">
+  <p class="eyebrow">Saved example · hand-authored fictional fixture</p><h2>{{ item.title }}</h2><p>{{ item.message }}</p>
+  <details><summary>View saved example result</summary><p><strong>Category:</strong> {{ item.saved.category }}</p><p>{{ item.saved.summary }}</p><h3>Draft for human review</h3><p>{{ item.saved.reply_draft }}</p><p>{{ item.saved.review_reason }}</p><p>Awaiting review. No reply sent.</p></details>
+  {% if csrf_token %}<form method="post" action="/explore/simulate"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="sample_id" value="{{ item.id }}"><button class="button secondary" type="submit">Simulate this enquiry</button></form>
+  {% if live_enabled %}<form method="post" action="/explore/live"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="sample_id" value="{{ item.id }}"><button class="button primary" type="submit">Generate live with Gemini</button><p class="muted">Sends only this fictional message and approved fictional knowledge to Google. Uses the shared budget.</p></form>{% endif %}
+  {% else %}<a href="/explore">Return to choose a sample</a>{% endif %}
+</article>{% endfor %}
+</div>
+<p class="muted">The public demo cannot retrieve private enquiries, drafts, attempts, or administrator configuration. It accepts no visitor message text. Saved examples are not live customer records.</p>
+{% endblock %}

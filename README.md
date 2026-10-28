@@ -4,7 +4,8 @@ A local FastAPI application that saves software-service enquiries and prepares
 private reply drafts for a single administrator reviewing software-service
 enquiries. Phases 1–3 implement the agreed local prototype, including optional
 Gemini through the official `google-genai` SDK. Explicit demo mode needs no API
-key. No replies are sent automatically. Hosting is a separate optional next step.
+key. No replies are sent automatically. A separate fictional portfolio deployment
+is prepared for Vercel Hobby and Neon Free; see [deployment steps](docs/DEPLOYMENT.md).
 
 ## Implemented features
 
@@ -21,6 +22,8 @@ key. No replies are sent automatically. Hosting is a separate optional next step
 - Backed-up Phase 1 migration, isolated tests, browser checks, and GitHub Actions.
 - Private setup/knowledge status, suggested next steps, visible unsaved state,
   revision-checked browser saves, accessible controls, and per-process local limits.
+- Optional PostgreSQL, explicit cloud initialization, durable shared limits, secure
+  portfolio settings, and an Explore Demo page isolated from the private inbox.
 
 ## Upgrade an existing installation (PowerShell)
 
@@ -41,16 +44,16 @@ preserving receipts, messages, drafts, categories, workflow/processing statuses,
 timestamps, administrator hashes, and sessions. It is safe to repeat; each run
 makes a distinct backup. New databases need no previous-data backup.
 
-Startup refuses a Phase 1 schema until migration. `create_all` does not substitute
+Startup refuses an older SQLite schema until migration. `create_all` does not substitute
 for column migration. Backups contain private data and password hashes. For
 rollback, stop the app, preserve the upgraded file separately, and restore a
 verified backup with the matching Phase 1 application version. Never overwrite
 a live SQLite file.
 
-Phase 3 adds no database columns or new runtime dependencies. An installation
-already migrated for Phase 2 needs only the updated source and an application
-restart; preserve its `.env`, private FAQ, database, and administrator. Running
-`migrate-db` again is optional and makes another backup.
+The portfolio preparation adds the psycopg driver and SQLite revision 3's demo and
+shared-budget tables. Existing Phase 1–3 installations need the explicit backed-up
+`migrate-db` step before running this updated source. Preserve the existing `.env`,
+private FAQ, database, and administrator. No local-to-cloud data transfer is needed.
 
 ## First installation
 
@@ -323,17 +326,28 @@ one enquiry; the additional local budget bounds process-wide Gemini starts and
 concurrency but does not establish available provider quota. No background automatic retry
 or reprocessing of completed records occurs.
 
-There is no email delivery, password recovery UI, retention tooling, distributed
-rate limiting, multi-user permissions, or deployment setup. Protect the local
+There is no email delivery, password recovery UI, retention tooling, or multi-user
+permissions. Shared database limits are available for the fictional portfolio;
+local mode retains its per-process limits. Protect the local
 account/disk. Evaluate real-model language understanding and source relevance;
 verify summaries, questions, applicability of approved facts, and every reply.
 
 Phase 3 completes the agreed local prototype's usability/reliability review,
 regression coverage, and owner documentation. Business knowledge approval and
 ongoing human review remain owner responsibilities. Optional online hosting is a
-separate next step requiring review of the chosen environment; deployment
-readiness is not claimed. SchoolOS, Vercel, Neon, and billing are not modified.
+separate next step following the portfolio runbook and hosting review. Cloud
+build/deployment verification remains outstanding. SchoolOS, Vercel, Neon, and
+billing are not modified during preparation.
 
 References: [Google quickstart](https://ai.google.dev/gemini-api/docs/quickstart),
 [structured output](https://ai.google.dev/gemini-api/docs/structured-output),
 [official SDK](https://googleapis.github.io/python-genai/).
+
+## Portfolio deployment preparation
+
+For the separate fictional Vercel Hobby / Neon Free portfolio, follow
+[the deployment runbook](docs/DEPLOYMENT.md). No cloud resources are provisioned
+by the application. The local SQLite application and private knowledge stay local.
+After updating an existing local checkout, stop the app and run
+`python -m app.cli migrate-db` once; it backs up SQLite before the additive v3 migration.
+Do not copy the local database or `.env` to the portfolio.

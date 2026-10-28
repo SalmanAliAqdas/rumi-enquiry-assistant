@@ -60,3 +60,35 @@ def test_cli_rejects_unsafe_creation(tmp_path, monkeypatch, password, confirmati
             assert not db.exec(select(Admin)).all()
     finally:
         engine.dispose()
+
+
+def test_cloud_url_prompt_ignores_local_env_and_never_echoes_url(monkeypatch, capsys):
+    url = "postgresql://fictional:secret-test-only@localhost/rumi_demo?sslmode=require"
+    monkeypatch.setattr("sys.argv", ["cli", "migrate-db", "--database-url-prompt"])
+    with (
+        patch("app.cli.getpass", return_value=url),
+        patch("app.migrations.migrate_database", return_value=None) as migrate,
+    ):
+        cli.main()
+    migrate.assert_called_once_with(url)
+    output = capsys.readouterr().out
+    assert "Schema ready" in output
+    assert url not in output and "secret-test-only" not in output
+
+
+def test_cloud_url_prompt_refuses_password_echo_fallback(monkeypatch):
+    import warnings
+    from getpass import GetPassWarning
+
+    monkeypatch.setattr("sys.argv", ["cli", "migrate-db", "--database-url-prompt"])
+
+    def echo_warning(*args):
+        warnings.warn("No secure terminal", GetPassWarning, stacklevel=2)
+
+    with (
+        patch("app.cli.getpass", side_effect=echo_warning),
+        patch("app.migrations.migrate_database") as migrate,
+        pytest.raises(GetPassWarning),
+    ):
+        cli.main()
+    migrate.assert_not_called()

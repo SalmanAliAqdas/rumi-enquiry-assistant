@@ -74,3 +74,24 @@ class WebSession(SQLModel, table=True):
     csrf_token: str
     admin_id: int | None = Field(default=None, foreign_key="admin.id")
     expires_at: datetime
+
+
+class SharedBudget(SQLModel, table=True):
+    scope: str = Field(primary_key=True)
+    window_start: float = 0
+    used: int = 0
+    total: int = 0
+    lease_token: str | None = None
+    lease_until: float = 0
+
+
+class DemoRun(SQLModel, table=True):
+    """Only fixed fictional samples; never joins or references the private inbox."""
+
+    id: str = Field(primary_key=True)
+    sample_id: str
+    kind: str
+    status: str = "Pending"
+    result: dict | None = Field(default=None, sa_column=Column(JSON))
+    error_code: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)

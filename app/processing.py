@@ -1,4 +1,4 @@
-"""Short SQLite claims surround a bounded model request; no transaction spans it."""
+"""Short database claims surround a bounded model request; no transaction spans it."""
 
 import asyncio
 from datetime import timedelta
@@ -9,8 +9,12 @@ from sqlmodel import Session, select
 
 from app.models import Enquiry, ProcessingAttempt, Workflow, utcnow
 from app.services import ProcessingFailure
+from app.shared_limits import run_processor
 
 ERRORS = {
+    "shared_limit": "Shared Gemini daily or total budget reached. Review manually; no fallback.",
+    "shared_busy": "Another Gemini request is active. Retry manually later.",
+    "shared_unavailable": "Shared usage guard unavailable. No model request was authorized.",
     "local_limit": (
         "Local processing limit reached (6 starts per minute). Wait at least a minute before "
         "retrying manually. The enquiry and saved draft are preserved."
@@ -104,16 +108,8 @@ async def process_enquiry(app, enquiry_id: int, *, initial: bool = False) -> boo
     result = None
     sources = []
     cancelled = False
-    admitted = False
     try:
-        if app.state.processing_mode == "gemini":
-            limit_code, _ = app.state.processing_budget.enter()
-            if limit_code:
-                raise ProcessingFailure(limit_code)
-            admitted = True
-        result = await asyncio.wait_for(
-            app.state.processor.process(message), timeout=app.state.processing_timeout
-        )
+        result = await run_processor(app, message)
         sources = result._faq_sources
     except TimeoutError:
         code = "timeout"
@@ -124,9 +120,6 @@ async def process_enquiry(app, enquiry_id: int, *, initial: bool = False) -> boo
     except Exception:
         # Never persist/log raw exceptions, provider payloads, keys, or customer data.
         code = "provider"
-    finally:
-        if admitted:
-            app.state.processing_budget.leave()
     with Session(app.state.engine) as db:
         finish = db.exec(
             update(Enquiry)

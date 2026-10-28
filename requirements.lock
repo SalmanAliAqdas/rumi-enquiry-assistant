@@ -1,5 +1,8 @@
 # Verified application and test dependencies (Python 3.13, Windows).
 # Install with: python -m pip install -r requirements.lock
+psycopg==3.3.6
+psycopg-binary==3.3.6
+tzdata==2026.5
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
