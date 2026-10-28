@@ -68,9 +68,17 @@ perform the hosting review, deployment, and live verification. SchoolOS and all
 existing Neon/Vercel resources are unchanged. No Neon/PgBouncer connection, Vercel
 build, cloud cold-start, or live-host checks have run. No new live Gemini requests.
 
-Git delivery will be recorded after the preparation commit is pushed and its
-remote SHA is verified. CI now includes a disposable PostgreSQL service; its
-remote outcome is separate from the completed local verification above.
+Git delivery: implementation commit `8db7807edbedf33a849c73133a77ef2fc2acd397`
+(`Prepare isolated portfolio for Vercel and PostgreSQL`) was pushed to the expected
+repository's `main`; `git ls-remote` verified that exact remote SHA. The subsequent
+documentation-only delivery commit records this evidence.
+
+[GitHub Actions Checks run 40613364956](https://github.com/SalmanAliAqdas/rumi-enquiry-assistant/actions/runs/40613364956)
+completed successfully on implementation commit `8db7807`: Ubuntu/Python 3.13,
+disposable PostgreSQL 17 service, pinned installation, editable project install,
+dependency check, SQLite/PostgreSQL pytest suite, Ruff lint, and format check.
+The temporary local PostgreSQL server was stopped after verification. No cloud
+resources or deployment were created by either local checks or this CI run.
 
 ## Phase 3 completion (historical)
 
